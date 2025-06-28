@@ -1,6 +1,6 @@
 # Dashboard Financeiro Pessoal
 
-![Screenshot do Dashboard Financeiro](caminho/para/sua/imagem.png)
+![Screenshot do Dashboard Financeiro](/home/obrunofelix/despesas-trabalho/src/assets/exemplo.png)
 
 Um dashboard moderno e interativo para gerenciamento de finanças pessoais, permitindo ao usuário adicionar, visualizar, editar e excluir transações de receitas e despesas. A aplicação conta com resumos financeiros e visualizações gráficas para uma análise clara dos dados.
 
@@ -32,56 +32,3 @@ Este projeto foi construído utilizando as seguintes tecnologias e bibliotecas d
 -   **Hooks do React:** Uso extensivo de `useState`, `useEffect` e `useMemo` para gerenciamento de estado e lógica do componente.
 
 ---
-
-## ⚙️ Como Executar o Projeto
-
-Siga os passos abaixo para executar o projeto em seu ambiente de desenvolvimento local.
-
-### Pré-requisitos
-
--   [Node.js](https://nodejs.org/) (versão 18 ou superior)
--   `npm` ou `yarn`
-
-### Passos
-
-1.  **Clone o repositório (se estiver no GitHub):**
-    ```bash
-    git clone [https://github.com/seu-usuario/seu-repositorio.git](https://github.com/seu-usuario/seu-repositorio.git)
-    cd seu-repositorio
-    ```
-
-2.  **Instale as dependências do projeto:**
-    ```bash
-    npm install
-    ```
-
-3.  **Configure suas variáveis de ambiente do Firebase:**
-    - Crie um arquivo chamado `.env.local` na raiz do projeto.
-    - Dentro deste arquivo, adicione as chaves de configuração do seu projeto Firebase. Você pode encontrá-las nas configurações do seu projeto no console do Firebase.
-
-    **Exemplo do conteúdo do arquivo `.env.local`:**
-    ```
-    VITE_API_KEY="SUA_API_KEY"
-    VITE_AUTH_DOMAIN="SEU_AUTH_DOMAIN"
-    VITE_PROJECT_ID="SEU_PROJECT_ID"
-    VITE_STORAGE_BUCKET="SEU_STORAGE_BUCKET"
-    VITE_MESSAGING_SENDER_ID="SEU_MESSAGING_SENDER_ID"
-    VITE_APP_ID="SEU_APP_ID"
-    ```
-    *Lembre-se de substituir os valores `SUA_...` pelas suas chaves reais.*
-
-4.  **Execute o servidor de desenvolvimento:**
-    ```bash
-    npm run dev
-    ```
-
-5.  Abra seu navegador e acesse `http://localhost:5173` (ou o endereço que aparecer no seu terminal).
-
----
-
-## ✒️ Autor
-
-**Bruno Felix**
-
--   [GitHub](https://github.com/obrunofelix) 
--   (Adicione seu LinkedIn ou outro contato se desejar)
