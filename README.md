@@ -1,6 +1,6 @@
 # Dashboard Financeiro Pessoal
 
-![Screenshot do Dashboard Financeiro](/home/obrunofelix/despesas-trabalho/src/assets/exemplo.png)
+![Screenshot do Dashboard Financeiro](/assets/exemplo.png)
 
 Um dashboard moderno e interativo para gerenciamento de finanças pessoais, permitindo ao usuário adicionar, visualizar, editar e excluir transações de receitas e despesas. A aplicação conta com resumos financeiros e visualizações gráficas para uma análise clara dos dados.
 
