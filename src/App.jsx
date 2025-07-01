@@ -29,9 +29,20 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // Nova lógica para comparar mês de forma robusta
+  const comparaMes = (dataISO, filtro) => {
+    if (filtro === 'todos') return true;
+    const data = new Date(dataISO);
+    const [anoFiltro, mesFiltro] = filtro.split('-');
+    return (
+      data.getFullYear() === parseInt(anoFiltro, 10) &&
+      data.getMonth() + 1 === parseInt(mesFiltro, 10)
+    );
+  };
+
   const transacoesFiltradas = useMemo(() => {
     return transacoes.filter(t => {
-      const passaFiltroMes = filtroMes === 'todos' || t.data.startsWith(filtroMes);
+      const passaFiltroMes = comparaMes(t.data, filtroMes);
       const passaFiltroCategoria = filtroCategoria === 'todas' || t.categoria === filtroCategoria;
       const passaFiltroTipo = filtroTipo === 'todos' || t.tipo === filtroTipo;
       return passaFiltroMes && passaFiltroCategoria && passaFiltroTipo;
@@ -52,7 +63,7 @@ function App() {
 
     if (resultado.isConfirmed) {
       try {
-        if (transacaoParaEditar && transacaoParaEditar.id === idParaExcluir) {
+        if (transacaoParaEditar?.id === idParaExcluir) {
           setTransacaoParaEditar(null);
         }
         await deleteDoc(doc(db, "transacoes", idParaExcluir));
@@ -81,56 +92,76 @@ function App() {
     setModalAberto(false);
   };
 
+  const abrirModalParaNovaTransacao = () => {
+    setTransacaoParaEditar(null);
+    setFiltroMes('todos');
+    setFiltroCategoria('todas');
+    setFiltroTipo('todos');
+    setModalAberto(true);
+  };
+
   return (
     <div className="min-h-screen bg-slate-100">
+      {/* Header */}
       <header className="bg-slate-800 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 flex-wrap gap-2">
           <div className="flex items-center space-x-2">
-            <ChartBarIcon className="h-8 w-8 text-indigo-400" />
-            <h1 className="text-xl font-bold text-white">Dashboard Financeiro</h1>
+            <ChartBarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-400" />
+            <h1 className="text-lg sm:text-xl font-bold text-white">Dashboard Financeiro</h1>
           </div>
         </div>
       </header>
 
-      <div className="flex justify-end mt-4 px-4 sm:px-6 lg:px-8">
+      {/* Botão Adicionar Transação */}
+      <div className="flex justify-end sm:justify-between items-center flex-wrap gap-2 mt-4 px-4 sm:px-6 lg:px-8">
         <button 
-          onClick={() => {
-            setTransacaoParaEditar(null);
-            setModalAberto(true);
-          }}
-          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+          onClick={abrirModalParaNovaTransacao}
+          className="w-full sm:w-auto bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm sm:text-base"
         >
           Adicionar Transação
         </button>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <ResumoFinanceiro transacoes={transacoes} />
+      {/* Conteúdo Principal */}
+      <main className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
+        <ResumoFinanceiro transacoes={transacoesFiltradas} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          {/* Coluna Esquerda: Apenas o gráfico agora */}
-          <div className="lg:col-span-1 space-y-6">
-            <GraficoCategorias transacoes={transacoes} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+          {/* Gráfico */}
+          <div className="lg:col-span-1 md:col-span-2 space-y-6">
+            <GraficoCategorias transacoes={transacoesFiltradas} />
           </div>
 
-          {/* Coluna Direita: Filtros e Lista de Transações */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Filtros e Lista */}
+          <div className="lg:col-span-2 md:col-span-2 space-y-6">
             <Filtros 
               transacoes={transacoes}
               setFiltroMes={setFiltroMes}
               setFiltroCategoria={setFiltroCategoria}
               setFiltroTipo={setFiltroTipo}
             />
-            <ListaTransacoes 
-              transacoes={transacoesFiltradas}
-              carregando={carregando}
-              onSelecionarParaEditar={handleSelecionarParaEditar}
-              onExcluir={handleExcluir}
-            />
+
+            {carregando ? (
+              <div className="bg-white rounded-lg shadow-md p-4 text-center text-slate-500 flex justify-center items-center space-x-2">
+                <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                <span>Carregando...</span>
+              </div>
+            ) : (
+              <ListaTransacoes 
+                transacoes={transacoesFiltradas}
+                carregando={carregando}
+                onSelecionarParaEditar={handleSelecionarParaEditar}
+                onExcluir={handleExcluir}
+              />
+            )}
           </div>
         </div>
       </main>
 
+      {/* Modal */}
       <ModalTransacao 
         aberto={modalAberto}
         aoFechar={handleCancelarEdicao}

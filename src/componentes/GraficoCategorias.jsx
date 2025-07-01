@@ -1,34 +1,21 @@
 import React, { useMemo } from 'react';
-// Importações da biblioteca de gráficos
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from 'chart.js';
 
-// Precisamos "registrar" os elementos que o gráfico usará. É um passo obrigatório.
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 function GraficoCategorias({ transacoes }) {
-
-  // A lógica do gráfico será memoizada com useMemo para otimização.
-  // Ele só vai recalcular os dados quando a lista de transações mudar.
   const dadosDoGrafico = useMemo(() => {
-    // 1. Filtrar apenas as despesas
     const despesas = transacoes.filter(t => t.tipo === 'despesa');
 
-    // 2. Agrupar as despesas por categoria e somar os valores
     const gastosPorCategoria = despesas.reduce((acc, transacao) => {
       const { categoria, valor } = transacao;
-      // Se a categoria ainda não existe no acumulador, inicializa com 0
-      if (!acc[categoria]) {
-        acc[categoria] = 0;
-      }
-      // Soma o valor da transação atual à categoria correspondente
-      acc[categoria] += valor;
+      acc[categoria] = (acc[categoria] || 0) + valor;
       return acc;
-    }, {}); // O {} inicial é o nosso objeto acumulador
+    }, {});
 
-    // 3. Preparar os dados para o formato que o Chart.js espera
-    const labels = Object.keys(gastosPorCategoria); // Ex: ['Alimentação', 'Transporte', ...]
-    const data = Object.values(gastosPorCategoria); // Ex: [500, 150, ...]
+    const labels = Object.keys(gastosPorCategoria);
+    const data = Object.values(gastosPorCategoria);
 
     return {
       labels,
@@ -36,11 +23,11 @@ function GraficoCategorias({ transacoes }) {
         {
           label: 'Despesas por Categoria',
           data,
-          backgroundColor: [ // Cores para cada fatia da pizza
-            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+          backgroundColor: [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
             '#9966FF', '#FF9F40', '#C9CBCF', '#4D5360'
           ],
-          borderColor: '#FFF', // Cor da borda entre as fatias
+          borderColor: '#FFF',
           borderWidth: 2,
         },
       ],
@@ -49,28 +36,41 @@ function GraficoCategorias({ transacoes }) {
 
   const opcoesDoGrafico = {
     responsive: true,
+    maintainAspectRatio: false, // Permite o gráfico ocupar altura personalizada
     plugins: {
       legend: {
-        position: 'top', // Posição da legenda
+        position: 'top',
+        labels: {
+          padding: 10,
+        }
       },
       title: {
         display: true,
         text: 'Distribuição de Despesas',
         font: {
           size: 18,
-        }
+        },
+        padding: {
+          top: 10,
+          bottom: 20,
+        },
       },
     },
   };
 
+  const temDespesas = transacoes.some(t => t.tipo === 'despesa');
+
   return (
-    // Widget branco com sombra, no mesmo estilo dos outros
     <div className="bg-white rounded-lg shadow-md p-4">
-      {transacoes.filter(t => t.tipo === 'despesa').length > 0 ? (
-        <Pie data={dadosDoGrafico} options={opcoesDoGrafico} />
+      {temDespesas ? (
+        <div className="relative h-[300px] sm:h-[400px]">
+          <Pie data={dadosDoGrafico} options={opcoesDoGrafico} />
+        </div>
       ) : (
-        <div className="text-center py-10">
-          <p className="text-slate-500">Sem dados de despesas para exibir o gráfico.</p>
+        <div className="text-center py-12 sm:py-20">
+          <p className="text-slate-500 text-sm sm:text-base">
+            Sem dados de despesas para exibir o gráfico.
+          </p>
         </div>
       )}
     </div>
