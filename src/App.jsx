@@ -3,18 +3,18 @@ import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase
 import { db } from './firebase/configuracao';
 import Swal from 'sweetalert2';
 
-// Importando nossos componentes
-import FormularioTransacao from './componentes/FormularioTransacao';
 import ListaTransacoes from './componentes/ListaTransacoes';
 import ResumoFinanceiro from './componentes/ResumoFinanceiro';
 import GraficoCategorias from './componentes/GraficoCategorias';
 import Filtros from './componentes/Filtros';
+import ModalTransacao from './componentes/ModalTransacao';
 import { ChartBarIcon } from '@heroicons/react/24/solid';
 
 function App() {
   const [transacoes, setTransacoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [transacaoParaEditar, setTransacaoParaEditar] = useState(null);
+  const [modalAberto, setModalAberto] = useState(false);
 
   const [filtroMes, setFiltroMes] = useState('todos');
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
@@ -29,7 +29,6 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // A lógica para criar a lista filtrada continua a mesma
   const transacoesFiltradas = useMemo(() => {
     return transacoes.filter(t => {
       const passaFiltroMes = filtroMes === 'todos' || t.data.startsWith(filtroMes);
@@ -39,14 +38,32 @@ function App() {
     });
   }, [transacoes, filtroMes, filtroCategoria, filtroTipo]);
 
-
   const handleExcluir = async (idParaExcluir) => {
-    const resultado = await Swal.fire({ title: 'Você tem certeza?', text: "Esta ação não poderá ser revertida!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Sim, excluir!', cancelButtonText: 'Cancelar' });
+    const resultado = await Swal.fire({
+      title: 'Você tem certeza?',
+      text: "Esta ação não poderá ser revertida!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sim, excluir!',
+      cancelButtonText: 'Cancelar'
+    });
+
     if (resultado.isConfirmed) {
       try {
-        if (transacaoParaEditar && transacaoParaEditar.id === idParaExcluir) { setTransacaoParaEditar(null); }
+        if (transacaoParaEditar && transacaoParaEditar.id === idParaExcluir) {
+          setTransacaoParaEditar(null);
+        }
         await deleteDoc(doc(db, "transacoes", idParaExcluir));
-        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Transação excluída!', showConfirmButton: false, timer: 3000, });
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Transação excluída!',
+          showConfirmButton: false,
+          timer: 3000,
+        });
       } catch (error) {
         console.error("Erro ao excluir: ", error);
         Swal.fire('Erro!', 'Ocorreu um erro ao excluir a transação.', 'error');
@@ -56,11 +73,12 @@ function App() {
 
   const handleSelecionarParaEditar = (transacao) => {
     setTransacaoParaEditar(transacao);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setModalAberto(true);
   };
 
   const handleCancelarEdicao = () => {
     setTransacaoParaEditar(null);
+    setModalAberto(false);
   };
 
   return (
@@ -73,39 +91,52 @@ function App() {
           </div>
         </div>
       </header>
-      
+
+      <div className="flex justify-end mt-4 px-4 sm:px-6 lg:px-8">
+        <button 
+          onClick={() => {
+            setTransacaoParaEditar(null);
+            setModalAberto(true);
+          }}
+          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+        >
+          Adicionar Transação
+        </button>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* O Resumo Financeiro agora recebe a lista COMPLETA E SEM FILTROS */}
         <ResumoFinanceiro transacoes={transacoes} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          
-          {/* Coluna da Esquerda: Formulário e Gráfico */}
+          {/* Coluna Esquerda: Apenas o gráfico agora */}
           <div className="lg:col-span-1 space-y-6">
-            <FormularioTransacao transacaoParaEditar={transacaoParaEditar} onCancelarEdicao={handleCancelarEdicao} />
-            {/* O Gráfico também recebe a lista COMPLETA E SEM FILTROS */}
             <GraficoCategorias transacoes={transacoes} />
           </div>
 
-          {/* Coluna da Direita: Filtros e Histórico */}
+          {/* Coluna Direita: Filtros e Lista de Transações */}
           <div className="lg:col-span-2 space-y-6">
-            {/* O componente de Filtros foi movido para ficar junto do Histórico */}
             <Filtros 
-              transacoes={transacoes} // Passa a lista completa para gerar as opções
+              transacoes={transacoes}
               setFiltroMes={setFiltroMes}
               setFiltroCategoria={setFiltroCategoria}
               setFiltroTipo={setFiltroTipo}
             />
-            {/* SOMENTE a Lista de Transações recebe os dados FILTRADOS */}
             <ListaTransacoes 
-              transacoes={transacoesFiltradas} 
+              transacoes={transacoesFiltradas}
               carregando={carregando}
               onSelecionarParaEditar={handleSelecionarParaEditar}
-              onExcluir={handleExcluir} 
+              onExcluir={handleExcluir}
             />
           </div>
         </div>
       </main>
+
+      <ModalTransacao 
+        aberto={modalAberto}
+        aoFechar={handleCancelarEdicao}
+        transacaoParaEditar={transacaoParaEditar}
+        onCancelarEdicao={handleCancelarEdicao}
+      />
     </div>
   );
 }
