@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+// ✨ 1. Importar a função 'where' do firestore
+import { collection, query, onSnapshot, doc, deleteDoc, where } from 'firebase/firestore';
 import { db } from '../firebase/configuracao';
 import Swal from 'sweetalert2';
-// ✨ 1. Importar os ícones necessários
 import { PencilIcon, TrashIcon, ArrowPathIcon, PlusCircleIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../contexto/AuthContext.jsx'; // ✨ 2. Importar o hook de autenticação
 
 const formatadorMoeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -38,19 +39,27 @@ const RecorrenteCard = ({ regra, onEditar, onExcluir }) => {
 };
 
 const PainelRecorrentes = ({ onSelecionarParaEditar, onNovaRecorrenciaClick }) => { 
+  const { usuario } = useAuth(); // ✨ 3. Obter o usuário logado
   const [recorrencias, setRecorrencias] = useState([]);
   const [carregando, setCarregando] = useState(true);
-  // ✨ 2. State para controlar a visibilidade do painel
   const [expandido, setExpandido] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, "transacoesRecorrentes"));
+    // ✨ 4. Não buscar nada se não houver usuário
+    if (!usuario) {
+        setRecorrencias([]);
+        setCarregando(false);
+        return;
+    }
+
+    // ✨ 5. Adicionar o filtro 'where' para buscar apenas as recorrências do usuário
+    const q = query(collection(db, "transacoesRecorrentes"), where("userId", "==", usuario.uid));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       setRecorrencias(querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
       setCarregando(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [usuario]); // ✨ 6. Adicionar 'usuario' como dependência
 
   const handleExcluir = async (id) => {
     const confirmacao = await Swal.fire({
@@ -76,7 +85,6 @@ const PainelRecorrentes = ({ onSelecionarParaEditar, onNovaRecorrenciaClick }) =
   return (
     <div className="bg-white rounded-lg shadow-md">
       <div className="p-4 border-b border-slate-200 flex justify-between items-center">
-        {/* ✨ 3. Título agora é um botão para expandir/encolher */}
         <button onClick={() => setExpandido(!expandido)} className="flex items-center space-x-2 text-left">
             <h2 className="text-lg font-bold text-slate-700">Transações Recorrentes</h2>
             {expandido ? <ChevronUpIcon className="h-5 w-5 text-slate-500"/> : <ChevronDownIcon className="h-5 w-5 text-slate-500"/>}
@@ -90,7 +98,6 @@ const PainelRecorrentes = ({ onSelecionarParaEditar, onNovaRecorrenciaClick }) =
         </button>
       </div>
 
-      {/* ✨ 4. Div que controla a animação e visibilidade do conteúdo */}
       <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandido ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="divide-y divide-slate-100 p-1">
           {carregando && <p className="p-4 text-slate-500">Carregando...</p>}

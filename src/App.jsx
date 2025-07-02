@@ -93,6 +93,7 @@ function App() {
     // ✨ 6. Garantir que só busque transações se houver um usuário
     if (!usuario) {
       setTransacoes([]); // Limpa as transações se o usuário fizer logout
+      setCarregando(false);
       return;
     }
 

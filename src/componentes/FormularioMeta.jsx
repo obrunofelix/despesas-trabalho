@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase/configuracao';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
+import { useAuth } from '../contexto/AuthContext.jsx'; // ✨ 1. Importar o hook de autenticação
 
 const formatadorMoeda = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -17,6 +18,8 @@ const tiposDeMeta = [
 const categoriasDisponiveis = ['Alimentação', 'Transporte', 'Moradia', 'Lazer', 'Saúde', 'Outro'];
 
 const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
+  const { usuario } = useAuth(); // ✨ 2. Obter o usuário logado
+
   const [tipo, setTipo] = useState(tiposDeMeta[0].valor);
   const [nome, setNome] = useState('');
   const [valorAlvo, setValorAlvo] = useState('');
@@ -27,7 +30,6 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
 
   const modoEdicao = !!metaParaEditar;
 
-  // ✨ 1. useEffect agora preenche TODOS os campos ao editar
   useEffect(() => {
     if (modoEdicao) {
       setTipo(metaParaEditar.tipo);
@@ -42,7 +44,6 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
       } else if (metaParaEditar.tipo === 'ECONOMIA') {
         if (metaParaEditar.dataFim) {
           setSemPrazo(false);
-          // Converte o Timestamp do Firebase para o formato YYYY-MM-DD
           setDataFim(metaParaEditar.dataFim.toDate().toISOString().slice(0, 10));
         } else {
           setSemPrazo(true);
@@ -50,7 +51,6 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
         }
       }
     } else {
-      // Limpa o formulário para o estado de criação
       setTipo(tiposDeMeta[0].valor);
       setNome('');
       setValorAlvo('');
@@ -69,6 +69,11 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
     e.preventDefault();
     const valorAlvoNumerico = Number(valorAlvo) / 100;
 
+    if (!usuario) {
+      Swal.fire('Erro', 'Você precisa estar logado para criar ou editar uma meta.', 'error');
+      return;
+    }
+
     if (!nome || !valorAlvoNumerico || valorAlvoNumerico <= 0) {
       Swal.fire('Atenção', 'Preencha o nome e um valor alvo positivo.', 'warning');
       return;
@@ -78,9 +83,9 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
       nome,
       tipo,
       valorAlvo: valorAlvoNumerico,
+      userId: usuario.uid, // ✨ 3. Adicionar o ID do usuário aos dados da meta
     };
 
-    // Adiciona campos específicos do tipo
     if (tipo === 'ECONOMIA') {
       dadosMeta.dataFim = semPrazo ? null : new Date(dataFim);
     } else if (tipo === 'GASTO_LIMITE') {
@@ -92,9 +97,7 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
 
     try {
       if (modoEdicao) {
-        // ✨ 2. Lógica de ATUALIZAÇÃO
         const metaDocRef = doc(db, 'metas', metaParaEditar.id);
-        // Ao editar, não alteramos o valorAtual nem a data de criação
         await updateDoc(metaDocRef, dadosMeta);
         Swal.fire({
           toast: true, position: 'top-end', icon: 'success',
@@ -102,7 +105,6 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
           showConfirmButton: false, timer: 3000, timerProgressBar: true,
         });
       } else {
-        // Lógica de CRIAÇÃO
         dadosMeta.valorAtual = 0;
         dadosMeta.dataCriacao = new Date();
         await addDoc(collection(db, 'metas'), dadosMeta);
@@ -125,20 +127,16 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
   return (
     <form onSubmit={aoSubmeter} className="space-y-4 p-4 pt-10">
       <h2 className="text-lg font-bold text-slate-700">{modoEdicao ? 'Editar Meta' : 'Criar Nova Meta'}</h2>
-
       <div>
         <label className={labelStyle}>Qual o tipo de meta?</label>
-        {/* ✨ 3. Desabilita a troca de tipo durante a edição */}
         <select value={tipo} onChange={(e) => setTipo(e.target.value)} className={inputStyle} disabled={modoEdicao}>
           {tiposDeMeta.map(t => <option key={t.valor} value={t.valor}>{t.texto}</option>)}
         </select>
       </div>
-
       <div>
         <label className={labelStyle}>Dê um nome para a meta</label>
         <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Férias de Fim de Ano" className={inputStyle} />
       </div>
-
       {tipo === 'GASTO_LIMITE' && (
         <div>
           <label className={labelStyle}>Para qual categoria de gasto?</label>
@@ -147,21 +145,18 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
           </select>
         </div>
       )}
-      
       {(tipo === 'GASTO_LIMITE' || tipo === 'SALDO_MES') && (
          <div>
           <label className={labelStyle}>Para qual mês?</label>
           <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} className={inputStyle} />
         </div>
       )}
-
       <div>
         <label className={labelStyle}>
           {tipo === 'GASTO_LIMITE' ? 'Qual o limite de gasto?' : 'Qual o valor alvo?'}
         </label>
         <input type="text" value={!valorAlvo ? '' : formatadorMoeda.format(Number(valorAlvo) / 100)} onChange={handleValorChange} placeholder="R$ 0,00" className={inputStyle}/>
       </div>
-
       {tipo === 'ECONOMIA' && (
         <>
           <div>
@@ -174,7 +169,6 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
           </div>
         </>
       )}
-
       <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700">
         {modoEdicao ? 'Salvar Alterações' : 'Criar Meta'}
       </button>

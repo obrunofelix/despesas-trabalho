@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase/configuracao';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
+import { useAuth } from '../contexto/AuthContext.jsx'; // ✨ 1. Importar o hook
 
 const categoriasDisponiveis = ['Alimentação', 'Transporte', 'Moradia', 'Lazer', 'Saúde', 'Salário', 'Outro'];
 const formatadorMoeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const FormularioRecorrente = ({ aoFinalizar, recorrenciaParaEditar }) => {
+  const { usuario } = useAuth(); // ✨ 2. Obter o usuário logado
+
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
   const [tipo, setTipo] = useState('despesa');
@@ -15,7 +18,6 @@ const FormularioRecorrente = ({ aoFinalizar, recorrenciaParaEditar }) => {
 
   const modoEdicao = !!recorrenciaParaEditar;
 
-  // ✨ Lógica de useEffect corrigida para limpar o form corretamente
   useEffect(() => {
     if (modoEdicao) {
       setDescricao(recorrenciaParaEditar.descricao);
@@ -24,7 +26,6 @@ const FormularioRecorrente = ({ aoFinalizar, recorrenciaParaEditar }) => {
       setCategoria(recorrenciaParaEditar.categoria);
       setDiaDoMes(recorrenciaParaEditar.diaDoMes);
     } else {
-      // Garante que o formulário é resetado ao abrir para criar uma nova
       setDescricao('');
       setValor('');
       setTipo('despesa');
@@ -40,6 +41,11 @@ const FormularioRecorrente = ({ aoFinalizar, recorrenciaParaEditar }) => {
   const aoSubmeter = async (e) => {
     e.preventDefault();
     const valorNumerico = Number(valor) / 100;
+    
+    if (!usuario) {
+      Swal.fire('Erro', 'Você precisa estar logado para esta ação.', 'error');
+      return;
+    }
 
     if (!descricao || !valorNumerico || valorNumerico <= 0) {
       Swal.fire('Atenção', 'Preencha todos os campos com valores válidos.', 'warning');
@@ -52,6 +58,7 @@ const FormularioRecorrente = ({ aoFinalizar, recorrenciaParaEditar }) => {
       tipo,
       categoria,
       diaDoMes: Number(diaDoMes),
+      userId: usuario.uid, // ✨ 3. Adicionar o ID do usuário aos dados
     };
 
     try {

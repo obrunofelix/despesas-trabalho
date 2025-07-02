@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, onSnapshot, doc, deleteDoc, updateDoc, increment } from 'firebase/firestore';
+// ✨ 1. Importar a função 'where' do firestore
+import { collection, query, onSnapshot, doc, deleteDoc, updateDoc, increment, where } from 'firebase/firestore';
 import { db } from '../firebase/configuracao';
 import Swal from 'sweetalert2';
 import { PlusCircleIcon, PencilIcon, TrashIcon, ChevronDownIcon, ChevronUpIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 import confetti from 'canvas-confetti';
+import { useAuth } from '../contexto/AuthContext.jsx'; // ✨ 2. Importar o hook de autenticação
 
 const formatadorMoeda = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -25,7 +27,7 @@ const MetaCard = ({ meta, onEditar, onExcluir, onAdicionarProgresso }) => {
   switch (meta.tipo) {
     case 'GASTO_LIMITE':
       textoProgresso = `${valorAtualFormatado} gastos de ${valorAlvoFormatado}`;
-      if (isConcluida) corBarra = 'bg-red-600'; // Estourou o limite
+      if (isConcluida) corBarra = 'bg-red-600';
       else if (progresso > 80) corBarra = 'bg-orange-500';
       else corBarra = 'bg-teal-500';
       break;
@@ -77,21 +79,30 @@ const MetaCard = ({ meta, onEditar, onExcluir, onAdicionarProgresso }) => {
 
 
 const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }) => {
+  const { usuario } = useAuth(); // ✨ 3. Obter o usuário logado
   const [metas, setMetas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [expandido, setExpandido] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, "metas"));
+    // ✨ 4. Não fazer a busca se não houver usuário
+    if (!usuario) {
+        setMetas([]);
+        setCarregando(false);
+        return;
+    };
+
+    // ✨ 5. Adicionar o filtro 'where' para buscar apenas as metas do usuário
+    const q = query(collection(db, "metas"), where("userId", "==", usuario.uid));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       setMetas(querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
       setCarregando(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [usuario]); // ✨ 6. Adicionar 'usuario' como dependência
   
   const metasComProgresso = useMemo(() => {
-    if (!transacoes) return [];
+    if (!transacoes || !usuario) return [];
 
     return metas.map(meta => {
       let valorAtualCalculado = meta.valorAtual || 0;
@@ -113,7 +124,6 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
           break;
       }
       
-      // ✨ Lógica para definir o status da meta
       if (meta.valorAlvo > 0 && valorAtualCalculado >= meta.valorAlvo) {
         status = 'concluida';
       } else if (meta.dataFim && meta.dataFim.toDate() < new Date()) {
@@ -123,7 +133,7 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
       const progresso = meta.valorAlvo > 0 ? (valorAtualCalculado / meta.valorAlvo) * 100 : 0;
       return { ...meta, valorAtualCalculado, progresso, status };
     });
-  }, [metas, transacoes]);
+  }, [metas, transacoes, usuario]);
   
   const handleAdicionarProgresso = async (meta) => {
     const { value: valorFinal } = await Swal.fire({
@@ -158,7 +168,6 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
         try {
             await updateDoc(metaDocRef, { valorAtual: increment(valorFinal) });
 
-            // ✨ Lógica de celebração ao atingir a meta
             if (novoValorAtual >= meta.valorAlvo) {
                 Swal.fire({
                     title: 'Parabéns!',
