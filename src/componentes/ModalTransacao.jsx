@@ -17,7 +17,6 @@ const ModalTransacao = ({ aberto, aoFechar, transacaoParaEditar, onCancelarEdica
     }
   }, [aberto]);
 
-  // Fecha o modal se clicar fora do conteúdo
   const aoClicarFora = (e) => {
     if (e.target === fundoRef.current) {
       aoFechar();
@@ -30,7 +29,7 @@ const ModalTransacao = ({ aberto, aoFechar, transacaoParaEditar, onCancelarEdica
     <div
       ref={fundoRef}
       onClick={aoClicarFora}
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-200 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30 transition-opacity duration-200 ${
         aberto ? 'opacity-100' : 'opacity-0'
       }`}
       role="dialog"
@@ -40,7 +39,7 @@ const ModalTransacao = ({ aberto, aoFechar, transacaoParaEditar, onCancelarEdica
         className={`bg-white rounded-lg shadow-lg w-[95%] sm:w-full max-w-md p-4 sm:p-6 relative max-h-screen overflow-y-auto transform transition-transform duration-200 ${
           aberto ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
         }`}
-        onClick={(e) => e.stopPropagation()} // Impede fechamento ao clicar dentro
+        onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={aoFechar}
