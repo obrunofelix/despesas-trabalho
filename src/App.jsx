@@ -23,7 +23,9 @@ function App() {
   const [modalMetaAberto, setModalMetaAberto] = useState(false);
   const [metaParaEditar, setMetaParaEditar] = useState(null);
 
-  const [filtroMes, setFiltroMes] = useState('todos');
+  // ✨ 1. Estados dos filtros atualizados para range de datas
+  const [dataInicio, setDataInicio] = useState(null);
+  const [dataFim, setDataFim] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
   const [filtroTipo, setFiltroTipo] = useState('todos');
 
@@ -36,24 +38,26 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  const comparaMes = (dataISO, filtro) => {
-    if (filtro === 'todos') return true;
-    const data = new Date(dataISO);
-    const [anoFiltro, mesFiltro] = filtro.split('-');
-    return (
-      data.getFullYear() === parseInt(anoFiltro, 10) &&
-      data.getMonth() + 1 === parseInt(mesFiltro, 10)
-    );
-  };
-
+  // ✨ 2. Lógica de filtragem atualizada para usar o range de datas
   const transacoesFiltradas = useMemo(() => {
     return transacoes.filter(t => {
-      const passaFiltroMes = comparaMes(t.data, filtroMes);
+      const dataTransacao = new Date(t.data);
+      // Ajusta a data final para incluir o dia todo
+      const dataFimAjustada = dataFim ? new Date(dataFim) : null;
+      if (dataFimAjustada) {
+        dataFimAjustada.setHours(23, 59, 59, 999);
+      }
+
+      const passaFiltroData = 
+        (!dataInicio || dataTransacao >= new Date(dataInicio)) &&
+        (!dataFimAjustada || dataTransacao <= dataFimAjustada);
+      
       const passaFiltroCategoria = filtroCategoria === 'todas' || t.categoria === filtroCategoria;
       const passaFiltroTipo = filtroTipo === 'todos' || t.tipo === filtroTipo;
-      return passaFiltroMes && passaFiltroCategoria && passaFiltroTipo;
+      
+      return passaFiltroData && passaFiltroCategoria && passaFiltroTipo;
     });
-  }, [transacoes, filtroMes, filtroCategoria, filtroTipo]);
+  }, [transacoes, dataInicio, dataFim, filtroCategoria, filtroTipo]);
 
   const handleExcluir = async (idParaExcluir) => {
     const resultado = await Swal.fire({
@@ -97,12 +101,19 @@ function App() {
     setTransacaoParaEditar(null);
     setModalAberto(false);
   };
+  
+  // ✨ 3. Nova função para limpar todos os filtros
+  const limparFiltros = () => {
+    setDataInicio(null);
+    setDataFim(null);
+    setFiltroCategoria('todas');
+    setFiltroTipo('todos');
+  };
 
   const abrirModalParaNovaTransacao = () => {
     setTransacaoParaEditar(null);
-    setFiltroMes('todos');
-    setFiltroCategoria('todas');
-    setFiltroTipo('todos');
+    // Limpa os filtros ao abrir o modal para uma nova transação, se desejar
+    limparFiltros(); 
     setModalAberto(true);
   };
 
@@ -155,12 +166,14 @@ function App() {
           </div>
 
           <div className="lg:col-span-2 md:col-span-2 space-y-6">
+            {/* ✨ 4. Passar os novos estados e a função de limpar para o componente Filtros */}
             <Filtros 
               transacoes={transacoes}
-              setFiltroMes={setFiltroMes}
-              setFiltroCategoria={setFiltroCategoria}
-              setFiltroTipo={setFiltroTipo}
+              filtros={{dataInicio, dataFim, filtroCategoria, filtroTipo}}
+              setters={{setDataInicio, setDataFim, setFiltroCategoria, setFiltroTipo}}
+              onLimparFiltros={limparFiltros}
             />
+            
             {carregando ? (
               <div className="bg-white rounded-lg shadow-md p-4 text-center text-slate-500 flex justify-center items-center space-x-2">
                 <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
