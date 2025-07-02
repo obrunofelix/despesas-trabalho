@@ -3,6 +3,7 @@ import { db } from '../firebase/configuracao';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
 
+// Função para obter a data e hora local formatada
 const obterDataHoraLocal = () => {
   const agora = new Date();
   const fusoHorarioOffset = agora.getTimezoneOffset() * 60000;
@@ -10,11 +11,17 @@ const obterDataHoraLocal = () => {
   return dataLocal.toISOString().slice(0, 16);
 };
 
+// Crie uma instância do formatador de moeda fora do componente para melhor performance
+const formatadorMoeda = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+});
+
 function FormularioTransacao({ transacaoParaEditar, onCancelarEdicao }) {
   const [dadosFormulario, setDadosFormulario] = useState({
     tipo: 'despesa',
     descricao: '',
-    valor: '',
+    valor: '', // O valor será armazenado como uma string de centavos, ex: "15000" para R$ 150,00
     categoria: 'Alimentação',
     data: obterDataHoraLocal(),
   });
@@ -25,9 +32,11 @@ function FormularioTransacao({ transacaoParaEditar, onCancelarEdicao }) {
     if (modoEdicao) {
       setDadosFormulario({
         ...transacaoParaEditar,
-        valor: String(transacaoParaEditar.valor),
+        // Converte o valor numérico (ex: 150.5) para uma string de centavos (ex: "15050")
+        valor: String(transacaoParaEditar.valor * 100),
       });
     } else {
+      // Reseta o formulário para o estado inicial
       setDadosFormulario({
         tipo: 'despesa',
         descricao: '',
@@ -38,17 +47,24 @@ function FormularioTransacao({ transacaoParaEditar, onCancelarEdicao }) {
     }
   }, [transacaoParaEditar, modoEdicao]);
 
+  // Handler genérico para a maioria dos inputs
   const aoMudar = (e) =>
     setDadosFormulario((s) => ({ ...s, [e.target.name]: e.target.value }));
+
+  // Handler específico para o campo de valor com máscara
+  const aoMudarValor = (e) => {
+    // Remove todos os caracteres que não são dígitos para armazenar apenas números
+    const valorApenasNumeros = e.target.value.replace(/\D/g, '');
+    setDadosFormulario((s) => ({ ...s, valor: valorApenasNumeros }));
+  };
 
   const aoSubmeter = async (e) => {
     e.preventDefault();
 
-    if (
-      !dadosFormulario.descricao ||
-      !dadosFormulario.valor ||
-      parseFloat(dadosFormulario.valor) <= 0
-    ) {
+    // Converte a string de centavos (ex: "15000") para um número decimal (ex: 150.00)
+    const valorNumerico = Number(dadosFormulario.valor) / 100;
+
+    if (!dadosFormulario.descricao || !valorNumerico || valorNumerico <= 0) {
       Swal.fire({
         icon: 'warning',
         title: 'Atenção',
@@ -59,7 +75,7 @@ function FormularioTransacao({ transacaoParaEditar, onCancelarEdicao }) {
 
     const dadosParaSalvar = {
       ...dadosFormulario,
-      valor: Number(dadosFormulario.valor),
+      valor: valorNumerico, // Salva o valor no formato numérico correto
     };
 
     try {
@@ -89,6 +105,7 @@ function FormularioTransacao({ transacaoParaEditar, onCancelarEdicao }) {
           timer: 3000,
           timerProgressBar: true,
         });
+        // Reseta o formulário após adicionar
         setDadosFormulario({
           tipo: 'despesa',
           descricao: '',
@@ -98,7 +115,7 @@ function FormularioTransacao({ transacaoParaEditar, onCancelarEdicao }) {
         });
       }
     } catch (error) {
-      console.error('Erro: ', error);
+      console.error('Erro ao salvar a transação: ', error);
       Swal.fire({
         icon: 'error',
         title: 'Oops...',
@@ -119,7 +136,6 @@ function FormularioTransacao({ transacaoParaEditar, onCancelarEdicao }) {
       </div>
 
       <form onSubmit={aoSubmeter} className="p-4 space-y-4">
-        {/* Layout com grid responsiva */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium text-slate-600 mb-1 block">
@@ -176,12 +192,17 @@ function FormularioTransacao({ transacaoParaEditar, onCancelarEdicao }) {
               Valor (R$)
             </label>
             <input
-              type="number"
+              type="text"
               name="valor"
-              value={dadosFormulario.valor}
-              onChange={aoMudar}
-              placeholder="150,00"
-              step="0.01"
+              value={
+                !dadosFormulario.valor
+                  ? ''
+                  : formatadorMoeda.format(
+                      Number(dadosFormulario.valor) / 100
+                    )
+              }
+              onChange={aoMudarValor}
+              placeholder="R$ 0,00"
               required
               className={inputStyle}
             />
