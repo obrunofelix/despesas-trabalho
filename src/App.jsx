@@ -3,6 +3,10 @@ import { collection, query, orderBy, onSnapshot, doc, deleteDoc, getDocs, where,
 import { db } from './firebase/configuracao';
 import Swal from 'sweetalert2';
 
+// ✨ 1. Importar o hook de autenticação e o componente de Login
+import { useAuth } from './contexto/AuthContext.jsx';
+import Login from './componentes/Login.jsx';
+
 // Componentes
 import ListaTransacoes from './componentes/ListaTransacoes';
 import ResumoFinanceiro from './componentes/ResumoFinanceiro';
@@ -16,6 +20,9 @@ import ModalRecorrente from './componentes/ModalRecorrente';
 import PainelRecorrentes from './componentes/PainelRecorrentes';
 
 function App() {
+  // ✨ 2. Usar o contexto para obter o usuário e a função de logout
+  const { usuario, logout } = useAuth();
+
   const [transacoes, setTransacoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [transacaoParaEditar, setTransacaoParaEditar] = useState(null);
@@ -36,47 +43,67 @@ function App() {
 
   // Motor de Transações Recorrentes
   useEffect(() => {
-    if (recorrenciasProcessadas.current) return;
+    // ✨ 3. Garantir que só rode se houver um usuário logado
+    if (!usuario || recorrenciasProcessadas.current) return;
+
     const processarRecorrencias = async () => {
       const hoje = new Date();
-      const q = query(collection(db, "transacoesRecorrentes"), where("ativa", "==", true));
+      // ✨ 4. Filtrar as regras pelo ID do usuário logado
+      const q = query(collection(db, "transacoesRecorrentes"), where("ativa", "==", true), where("userId", "==", usuario.uid));
       const querySnapshot = await getDocs(q);
       const promessas = [];
+
       querySnapshot.forEach((docRecorrente) => {
         const regra = { id: docRecorrente.id, ...docRecorrente.data() };
         const ultimoRegistro = regra.ultimoRegistro ? regra.ultimoRegistro.toDate() : null;
         let deveCriar = false;
+        
         if (!ultimoRegistro) {
           if (hoje.getDate() >= regra.diaDoMes) deveCriar = true;
         } else {
           const noMesmoMes = hoje.getMonth() === ultimoRegistro.getMonth() && hoje.getFullYear() === ultimoRegistro.getFullYear();
           if (!noMesmoMes && hoje.getDate() >= regra.diaDoMes) deveCriar = true;
         }
+
         if (deveCriar) {
           const dataDaTransacao = new Date(hoje.getFullYear(), hoje.getMonth(), regra.diaDoMes);
           const novaTransacao = {
-            descricao: `${regra.descricao} (Recorrente)`, valor: regra.valor, tipo: regra.tipo,
-            categoria: regra.categoria, data: dataDaTransacao.toISOString(),
+            descricao: `${regra.descricao} (Recorrente)`,
+            valor: regra.valor,
+            tipo: regra.tipo,
+            categoria: regra.categoria,
+            data: dataDaTransacao.toISOString(),
+            userId: usuario.uid, // ✨ 5. Adicionar o ID do usuário na nova transação
           };
+
           promessas.push(addDoc(collection(db, 'transacoes'), novaTransacao));
           promessas.push(updateDoc(doc(db, 'transacoesRecorrentes', regra.id), { ultimoRegistro: new Date() }));
         }
       });
+      
       if (promessas.length > 0) await Promise.all(promessas);
     };
+
     processarRecorrencias();
     recorrenciasProcessadas.current = true;
-  }, []);
+  }, [usuario]); // Depende do usuário para rodar
 
   // Listener para transações normais
   useEffect(() => {
-    const q = query(collection(db, "transacoes"), orderBy("data", "desc"));
+    // ✨ 6. Garantir que só busque transações se houver um usuário
+    if (!usuario) {
+      setTransacoes([]); // Limpa as transações se o usuário fizer logout
+      return;
+    }
+
+    // ✨ 7. Filtrar as transações pelo ID do usuário logado
+    const q = query(collection(db, "transacoes"), where("userId", "==", usuario.uid), orderBy("data", "desc"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       setTransacoes(querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
       setCarregando(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [usuario]); // Depende do usuário para re-executar a busca
 
   const transacoesFiltradas = useMemo(() => {
     return transacoes.filter(t => {
@@ -119,6 +146,22 @@ function App() {
   const abrirModalNovaRecorrencia = () => { setRecorrenciaParaEditar(null); setModalRecorrenteAberto(true); };
   const handleCancelarEdicaoRecorrencia = () => { setRecorrenciaParaEditar(null); setModalRecorrenteAberto(false); };
 
+  // ✨ 8. Função para fazer logout
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Erro ao fazer logout", error);
+      Swal.fire('Erro', 'Não foi possível sair. Tente novamente.', 'error');
+    }
+  };
+
+  // ✨ 9. Se não houver usuário, renderiza a tela de Login
+  if (!usuario) {
+    return <Login />;
+  }
+
+  // Se houver usuário, renderiza o dashboard completo
   return (
     <div className="min-h-screen bg-slate-100">
       <header className="bg-slate-800 shadow-md">
@@ -127,10 +170,15 @@ function App() {
             <ChartBarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-400" />
             <h1 className="text-lg sm:text-xl font-bold text-white">Dashboard Financeiro</h1>
           </div>
+          {/* ✨ 10. Informações do usuário e botão de logout */}
+          <div className="flex items-center space-x-4">
+            <img src={usuario.photoURL} alt={usuario.displayName} className="h-8 w-8 rounded-full" />
+            <span className="text-white text-sm font-medium hidden sm:block">{usuario.displayName}</span>
+            <button onClick={handleLogout} className="text-sm text-slate-300 hover:text-white font-semibold">Sair</button>
+          </div>
         </div>
       </header>
 
-      {/* ✨ Botão de Recorrências removido daqui */}
       <div className="flex justify-end items-center flex-wrap gap-4 mt-4 px-4 sm:px-6 lg:px-8">
         <button 
           onClick={abrirModalParaNovaTransacao}
@@ -142,10 +190,8 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
         <ResumoFinanceiro transacoes={transacoesFiltradas} />
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-1 md:col-span-2 space-y-6">
-            {/* ✨ Função para abrir o modal de nova recorrência passada como prop */}
             <PainelRecorrentes 
               onSelecionarParaEditar={handleSelecionarRecorrenciaParaEditar}
               onNovaRecorrenciaClick={abrirModalNovaRecorrencia}
@@ -157,7 +203,6 @@ function App() {
             />
             <GraficoCategorias transacoes={transacoesFiltradas} />
           </div>
-
           <div className="lg:col-span-2 md:col-span-2 space-y-6">
             <Filtros 
               transacoes={transacoes}
