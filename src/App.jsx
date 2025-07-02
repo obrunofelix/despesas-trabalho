@@ -3,6 +3,7 @@ import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase
 import { db } from './firebase/configuracao';
 import Swal from 'sweetalert2';
 
+// Componentes existentes
 import ListaTransacoes from './componentes/ListaTransacoes';
 import ResumoFinanceiro from './componentes/ResumoFinanceiro';
 import GraficoCategorias from './componentes/GraficoCategorias';
@@ -10,11 +11,17 @@ import Filtros from './componentes/Filtros';
 import ModalTransacao from './componentes/ModalTransacao';
 import { ChartBarIcon } from '@heroicons/react/24/solid';
 
+import PainelMetas from './componentes/PainelMetas';
+import ModalMeta from './componentes/ModalMeta';
+
 function App() {
   const [transacoes, setTransacoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [transacaoParaEditar, setTransacaoParaEditar] = useState(null);
   const [modalAberto, setModalAberto] = useState(false);
+  
+  const [modalMetaAberto, setModalMetaAberto] = useState(false);
+  const [metaParaEditar, setMetaParaEditar] = useState(null);
 
   const [filtroMes, setFiltroMes] = useState('todos');
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
@@ -29,7 +36,6 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Nova lógica para comparar mês de forma robusta
   const comparaMes = (dataISO, filtro) => {
     if (filtro === 'todos') return true;
     const data = new Date(dataISO);
@@ -100,9 +106,23 @@ function App() {
     setModalAberto(true);
   };
 
+  const abrirModalNovaMeta = () => {
+    setMetaParaEditar(null);
+    setModalMetaAberto(true);
+  };
+  
+  const handleSelecionarMetaParaEditar = (meta) => {
+    setMetaParaEditar(meta);
+    setModalMetaAberto(true);
+  };
+  
+  const handleCancelarEdicaoMeta = () => {
+    setMetaParaEditar(null);
+    setModalMetaAberto(false);
+  };
+
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* Header */}
       <header className="bg-slate-800 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 flex-wrap gap-2">
           <div className="flex items-center space-x-2">
@@ -112,7 +132,6 @@ function App() {
         </div>
       </header>
 
-      {/* Botão Adicionar Transação */}
       <div className="flex justify-end sm:justify-between items-center flex-wrap gap-2 mt-4 px-4 sm:px-6 lg:px-8">
         <button 
           onClick={abrirModalParaNovaTransacao}
@@ -122,17 +141,19 @@ function App() {
         </button>
       </div>
 
-      {/* Conteúdo Principal */}
       <main className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
         <ResumoFinanceiro transacoes={transacoesFiltradas} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {/* Gráfico */}
           <div className="lg:col-span-1 md:col-span-2 space-y-6">
+            <PainelMetas 
+              onNovaMetaClick={abrirModalNovaMeta} 
+              onSelecionarMetaParaEditar={handleSelecionarMetaParaEditar}
+              transacoes={transacoes}
+            />
             <GraficoCategorias transacoes={transacoesFiltradas} />
           </div>
 
-          {/* Filtros e Lista */}
           <div className="lg:col-span-2 md:col-span-2 space-y-6">
             <Filtros 
               transacoes={transacoes}
@@ -140,7 +161,6 @@ function App() {
               setFiltroCategoria={setFiltroCategoria}
               setFiltroTipo={setFiltroTipo}
             />
-
             {carregando ? (
               <div className="bg-white rounded-lg shadow-md p-4 text-center text-slate-500 flex justify-center items-center space-x-2">
                 <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -161,12 +181,17 @@ function App() {
         </div>
       </main>
 
-      {/* Modal */}
       <ModalTransacao 
         aberto={modalAberto}
         aoFechar={handleCancelarEdicao}
         transacaoParaEditar={transacaoParaEditar}
         onCancelarEdicao={handleCancelarEdicao}
+      />
+      
+      <ModalMeta 
+        aberto={modalMetaAberto}
+        aoFechar={handleCancelarEdicaoMeta}
+        metaParaEditar={metaParaEditar}
       />
     </div>
   );

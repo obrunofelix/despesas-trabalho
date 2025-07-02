@@ -12,6 +12,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.1.11",
+    "canvas-confetti": "^1.9.3",
     "chart.js": "^4.5.0",
     "firebase": "^11.9.1",
     "react": "^19.1.0",
