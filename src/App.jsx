@@ -1,18 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { collection, query, orderBy, onSnapshot, doc, deleteDoc, getDocs, where, addDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase/configuracao';
 import Swal from 'sweetalert2';
 
-// Componentes existentes
+// Componentes
 import ListaTransacoes from './componentes/ListaTransacoes';
 import ResumoFinanceiro from './componentes/ResumoFinanceiro';
 import GraficoCategorias from './componentes/GraficoCategorias';
 import Filtros from './componentes/Filtros';
 import ModalTransacao from './componentes/ModalTransacao';
 import { ChartBarIcon } from '@heroicons/react/24/solid';
-
 import PainelMetas from './componentes/PainelMetas';
 import ModalMeta from './componentes/ModalMeta';
+import ModalRecorrente from './componentes/ModalRecorrente';
+import PainelRecorrentes from './componentes/PainelRecorrentes';
 
 function App() {
   const [transacoes, setTransacoes] = useState([]);
@@ -23,12 +24,51 @@ function App() {
   const [modalMetaAberto, setModalMetaAberto] = useState(false);
   const [metaParaEditar, setMetaParaEditar] = useState(null);
 
-  // ✨ 1. Estados dos filtros atualizados para range de datas
+  const [modalRecorrenteAberto, setModalRecorrenteAberto] = useState(false);
+  const [recorrenciaParaEditar, setRecorrenciaParaEditar] = useState(null);
+
   const [dataInicio, setDataInicio] = useState(null);
   const [dataFim, setDataFim] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
   const [filtroTipo, setFiltroTipo] = useState('todos');
+  
+  const recorrenciasProcessadas = useRef(false);
 
+  // Motor de Transações Recorrentes
+  useEffect(() => {
+    if (recorrenciasProcessadas.current) return;
+    const processarRecorrencias = async () => {
+      const hoje = new Date();
+      const q = query(collection(db, "transacoesRecorrentes"), where("ativa", "==", true));
+      const querySnapshot = await getDocs(q);
+      const promessas = [];
+      querySnapshot.forEach((docRecorrente) => {
+        const regra = { id: docRecorrente.id, ...docRecorrente.data() };
+        const ultimoRegistro = regra.ultimoRegistro ? regra.ultimoRegistro.toDate() : null;
+        let deveCriar = false;
+        if (!ultimoRegistro) {
+          if (hoje.getDate() >= regra.diaDoMes) deveCriar = true;
+        } else {
+          const noMesmoMes = hoje.getMonth() === ultimoRegistro.getMonth() && hoje.getFullYear() === ultimoRegistro.getFullYear();
+          if (!noMesmoMes && hoje.getDate() >= regra.diaDoMes) deveCriar = true;
+        }
+        if (deveCriar) {
+          const dataDaTransacao = new Date(hoje.getFullYear(), hoje.getMonth(), regra.diaDoMes);
+          const novaTransacao = {
+            descricao: `${regra.descricao} (Recorrente)`, valor: regra.valor, tipo: regra.tipo,
+            categoria: regra.categoria, data: dataDaTransacao.toISOString(),
+          };
+          promessas.push(addDoc(collection(db, 'transacoes'), novaTransacao));
+          promessas.push(updateDoc(doc(db, 'transacoesRecorrentes', regra.id), { ultimoRegistro: new Date() }));
+        }
+      });
+      if (promessas.length > 0) await Promise.all(promessas);
+    };
+    processarRecorrencias();
+    recorrenciasProcessadas.current = true;
+  }, []);
+
+  // Listener para transações normais
   useEffect(() => {
     const q = query(collection(db, "transacoes"), orderBy("data", "desc"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -38,53 +78,29 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // ✨ 2. Lógica de filtragem atualizada para usar o range de datas
   const transacoesFiltradas = useMemo(() => {
     return transacoes.filter(t => {
       const dataTransacao = new Date(t.data);
-      // Ajusta a data final para incluir o dia todo
       const dataFimAjustada = dataFim ? new Date(dataFim) : null;
-      if (dataFimAjustada) {
-        dataFimAjustada.setHours(23, 59, 59, 999);
-      }
-
-      const passaFiltroData = 
-        (!dataInicio || dataTransacao >= new Date(dataInicio)) &&
-        (!dataFimAjustada || dataTransacao <= dataFimAjustada);
-      
+      if (dataFimAjustada) dataFimAjustada.setHours(23, 59, 59, 999);
+      const passaFiltroData = (!dataInicio || dataTransacao >= new Date(dataInicio)) && (!dataFimAjustada || dataTransacao <= dataFimAjustada);
       const passaFiltroCategoria = filtroCategoria === 'todas' || t.categoria === filtroCategoria;
       const passaFiltroTipo = filtroTipo === 'todos' || t.tipo === filtroTipo;
-      
       return passaFiltroData && passaFiltroCategoria && passaFiltroTipo;
     });
   }, [transacoes, dataInicio, dataFim, filtroCategoria, filtroTipo]);
 
   const handleExcluir = async (idParaExcluir) => {
     const resultado = await Swal.fire({
-      title: 'Você tem certeza?',
-      text: "Esta ação não poderá ser revertida!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sim, excluir!',
-      cancelButtonText: 'Cancelar'
+      title: 'Você tem certeza?', text: "Esta ação não poderá ser revertida!", icon: 'warning',
+      showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33',
+      confirmButtonText: 'Sim, excluir!', cancelButtonText: 'Cancelar'
     });
-
     if (resultado.isConfirmed) {
       try {
-        if (transacaoParaEditar?.id === idParaExcluir) {
-          setTransacaoParaEditar(null);
-        }
+        if (transacaoParaEditar?.id === idParaExcluir) setTransacaoParaEditar(null);
         await deleteDoc(doc(db, "transacoes", idParaExcluir));
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          title: 'Transação excluída!',
-          showConfirmButton: false,
-          timer: 3000,
-        });
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Transação excluída!', showConfirmButton: false, timer: 3000 });
       } catch (error) {
         console.error("Erro ao excluir: ", error);
         Swal.fire('Erro!', 'Ocorreu um erro ao excluir a transação.', 'error');
@@ -92,45 +108,16 @@ function App() {
     }
   };
 
-  const handleSelecionarParaEditar = (transacao) => {
-    setTransacaoParaEditar(transacao);
-    setModalAberto(true);
-  };
-
-  const handleCancelarEdicao = () => {
-    setTransacaoParaEditar(null);
-    setModalAberto(false);
-  };
-  
-  // ✨ 3. Nova função para limpar todos os filtros
-  const limparFiltros = () => {
-    setDataInicio(null);
-    setDataFim(null);
-    setFiltroCategoria('todas');
-    setFiltroTipo('todos');
-  };
-
-  const abrirModalParaNovaTransacao = () => {
-    setTransacaoParaEditar(null);
-    // Limpa os filtros ao abrir o modal para uma nova transação, se desejar
-    limparFiltros(); 
-    setModalAberto(true);
-  };
-
-  const abrirModalNovaMeta = () => {
-    setMetaParaEditar(null);
-    setModalMetaAberto(true);
-  };
-  
-  const handleSelecionarMetaParaEditar = (meta) => {
-    setMetaParaEditar(meta);
-    setModalMetaAberto(true);
-  };
-  
-  const handleCancelarEdicaoMeta = () => {
-    setMetaParaEditar(null);
-    setModalMetaAberto(false);
-  };
+  const handleSelecionarParaEditar = (transacao) => { setTransacaoParaEditar(transacao); setModalAberto(true); };
+  const handleCancelarEdicao = () => { setTransacaoParaEditar(null); setModalAberto(false); };
+  const limparFiltros = () => { setDataInicio(null); setDataFim(null); setFiltroCategoria('todas'); setFiltroTipo('todos'); };
+  const abrirModalParaNovaTransacao = () => { setTransacaoParaEditar(null); limparFiltros(); setModalAberto(true); };
+  const abrirModalNovaMeta = () => { setMetaParaEditar(null); setModalMetaAberto(true); };
+  const handleSelecionarMetaParaEditar = (meta) => { setMetaParaEditar(meta); setModalMetaAberto(true); };
+  const handleCancelarEdicaoMeta = () => { setMetaParaEditar(null); setModalMetaAberto(false); };
+  const handleSelecionarRecorrenciaParaEditar = (regra) => { setRecorrenciaParaEditar(regra); setModalRecorrenteAberto(true); };
+  const abrirModalNovaRecorrencia = () => { setRecorrenciaParaEditar(null); setModalRecorrenteAberto(true); };
+  const handleCancelarEdicaoRecorrencia = () => { setRecorrenciaParaEditar(null); setModalRecorrenteAberto(false); };
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -143,10 +130,11 @@ function App() {
         </div>
       </header>
 
-      <div className="flex justify-end sm:justify-between items-center flex-wrap gap-2 mt-4 px-4 sm:px-6 lg:px-8">
+      {/* ✨ Botão de Recorrências removido daqui */}
+      <div className="flex justify-end items-center flex-wrap gap-4 mt-4 px-4 sm:px-6 lg:px-8">
         <button 
           onClick={abrirModalParaNovaTransacao}
-          className="w-full sm:w-auto bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm sm:text-base"
+          className="flex-grow sm:flex-grow-0 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm sm:text-base"
         >
           Adicionar Transação
         </button>
@@ -157,6 +145,11 @@ function App() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-1 md:col-span-2 space-y-6">
+            {/* ✨ Função para abrir o modal de nova recorrência passada como prop */}
+            <PainelRecorrentes 
+              onSelecionarParaEditar={handleSelecionarRecorrenciaParaEditar}
+              onNovaRecorrenciaClick={abrirModalNovaRecorrencia}
+            />
             <PainelMetas 
               onNovaMetaClick={abrirModalNovaMeta} 
               onSelecionarMetaParaEditar={handleSelecionarMetaParaEditar}
@@ -166,14 +159,12 @@ function App() {
           </div>
 
           <div className="lg:col-span-2 md:col-span-2 space-y-6">
-            {/* ✨ 4. Passar os novos estados e a função de limpar para o componente Filtros */}
             <Filtros 
               transacoes={transacoes}
               filtros={{dataInicio, dataFim, filtroCategoria, filtroTipo}}
               setters={{setDataInicio, setDataFim, setFiltroCategoria, setFiltroTipo}}
               onLimparFiltros={limparFiltros}
             />
-            
             {carregando ? (
               <div className="bg-white rounded-lg shadow-md p-4 text-center text-slate-500 flex justify-center items-center space-x-2">
                 <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -200,11 +191,15 @@ function App() {
         transacaoParaEditar={transacaoParaEditar}
         onCancelarEdicao={handleCancelarEdicao}
       />
-      
       <ModalMeta 
         aberto={modalMetaAberto}
         aoFechar={handleCancelarEdicaoMeta}
         metaParaEditar={metaParaEditar}
+      />
+      <ModalRecorrente 
+        aberto={modalRecorrenteAberto}
+        aoFechar={handleCancelarEdicaoRecorrencia}
+        recorrenciaParaEditar={recorrenciaParaEditar}
       />
     </div>
   );
