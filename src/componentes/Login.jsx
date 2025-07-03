@@ -30,7 +30,7 @@ const Login = () => {
           <p className="text-slate-600 dark:text-slate-300 text-sm">
             {/* Mensagem de instrução que muda dependendo do contexto */}
             {isWebView 
-              ? "Use o botão de login do aplicativo para entrar." 
+              ? "Acesse sua conta para controlar suas finanças com praticidade." 
               : "Acesse sua conta para controlar suas finanças com praticidade."
             }
           </p>
