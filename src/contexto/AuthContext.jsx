@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signInWithCredential } from 'firebase/auth';
 import { app } from '../firebase/configuracao'; // Seu arquivo de configuração do Firebase
 
 const AuthContext = createContext();
@@ -11,19 +11,48 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
-
   const auth = getAuth(app);
 
   useEffect(() => {
-    // Listener que observa mudanças no estado de autenticação
+    // Listener que observa mudanças no estado de autenticação do Firebase
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUsuario(user);
       setCarregando(false);
     });
 
-    return unsubscribe; // Limpa o listener ao desmontar
+    // --- NOVA LÓGICA PARA O WEBVIEW ---
+    // Função para lidar com o token recebido do app nativo
+    const handleTokenFromNative = async (event) => {
+      console.log("Token recebido do app nativo!");
+      const { token } = event.detail;
+
+      if (token) {
+        setCarregando(true);
+        try {
+          // Cria a credencial do Google a partir do token
+          const credential = GoogleAuthProvider.credential(token);
+          // Faz o login no Firebase com a credencial
+          await signInWithCredential(auth, credential);
+          // O listener onAuthStateChanged cuidará de atualizar o usuário e o estado de carregamento
+        } catch (error) {
+          console.error("Erro ao autenticar com a credencial nativa:", error);
+          setCarregando(false); // Garante que o carregamento termine em caso de erro
+        }
+      }
+    };
+
+    // Adiciona o listener para o evento customizado que o app nativo vai disparar
+    window.addEventListener('firebaseAuthTokenReceived', handleTokenFromNative);
+    // --- FIM DA NOVA LÓGICA ---
+
+    // Função de limpeza que é executada quando o componente é desmontado
+    return () => {
+      unsubscribe(); // Limpa o listener de autenticação
+      window.removeEventListener('firebaseAuthTokenReceived', handleTokenFromNative); // Limpa o listener do token
+    };
   }, [auth]);
 
+  // Este método continuará funcionando para login via navegador web
   const loginComGoogle = () => {
     const provider = new GoogleAuthProvider();
     return signInWithPopup(auth, provider);
