@@ -74,7 +74,7 @@ const PainelRecorrentes = ({ onSelecionarParaEditar, onNovaRecorrenciaClick }) =
     if (confirmacao.isConfirmed) {
       try {
         await deleteDoc(doc(db, 'transacoesRecorrentes', id));
-        Swal.fire({ toast: true, icon: 'success', title: 'Regra de recorrência removida!', timer: 3000, showConfirmButton: false });
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Regra de recorrência removida!', timer: 3000, showConfirmButton: false });
       } catch (err) {
         console.error(err);
         Swal.fire('Erro', 'Não foi possível remover a regra.', 'error');

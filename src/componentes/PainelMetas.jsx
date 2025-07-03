@@ -196,7 +196,7 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
     if (confirmacao.isConfirmed) {
       try {
         await deleteDoc(doc(db, 'metas', id));
-        Swal.fire({ toast: true, icon: 'success', title: 'Meta excluída!', showConfirmButton: false, timer: 3000 });
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Meta excluída!', showConfirmButton: false, timer: 3000 });
       } catch (err) {
         console.error(err);
         Swal.fire('Erro', 'Não foi possível remover a meta.', 'error');
