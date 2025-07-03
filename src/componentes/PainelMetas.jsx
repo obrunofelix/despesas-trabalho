@@ -83,7 +83,7 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
   const { usuario } = useAuth();
   const [metas, setMetas] = useState([]);
   const [carregando, setCarregando] = useState(true);
-  const [expandido, setExpandido] = useState(true);
+  const [expandido, setExpandido] = useState(false);
 
   useEffect(() => {
     if (!usuario) {

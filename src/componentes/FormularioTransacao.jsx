@@ -80,6 +80,7 @@ const FormularioTransacao = ({ transacaoParaEditar, onCancelarEdicao }) => {
         setTipo('despesa');
         setCategoria(categoriasDisponiveis[0]);
         setData(obterDataHoraLocal());
+        if (onCancelarEdicao) onCancelarEdicao();
       }
     } catch (error) {
       console.error('Erro ao salvar transação:', error);

@@ -41,7 +41,7 @@ const PainelRecorrentes = ({ onSelecionarParaEditar, onNovaRecorrenciaClick }) =
   const { usuario } = useAuth();
   const [recorrencias, setRecorrencias] = useState([]);
   const [carregando, setCarregando] = useState(true);
-  const [expandido, setExpandido] = useState(true);
+  const [expandido, setExpandido] = useState(false);
 
   useEffect(() => {
     if (!usuario) {

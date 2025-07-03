@@ -32,6 +32,22 @@ function App() {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const recorrenciasProcessadas = useRef(false);
   const { temaEscuro, setTemaEscuro } = useTema();
+  const [mostrarBotaoFlutuante, setMostrarBotaoFlutuante] = useState(true);
+  const ultimaPosicaoScroll = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollAtual = window.scrollY;
+      if (scrollAtual > ultimaPosicaoScroll.current) {
+        setMostrarBotaoFlutuante(false);
+      } else {
+        setMostrarBotaoFlutuante(true);
+      }
+      ultimaPosicaoScroll.current = scrollAtual;
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (!usuario || recorrenciasProcessadas.current) return;
@@ -132,6 +148,7 @@ function App() {
   const handleSelecionarRecorrenciaParaEditar = (regra) => { setRecorrenciaParaEditar(regra); setModalRecorrenteAberto(true); };
   const abrirModalNovaRecorrencia = () => { setRecorrenciaParaEditar(null); setModalRecorrenteAberto(true); };
   const handleCancelarEdicaoRecorrencia = () => { setRecorrenciaParaEditar(null); setModalRecorrenteAberto(false); };
+  const [abaMobile, setAbaMobile] = useState('grafico');
 
   const handleLogout = async () => {
     try {
@@ -165,20 +182,79 @@ function App() {
         </div>
       </header>
 
-      <div className="flex justify-end items-center flex-wrap gap-4 mt-4 px-4 sm:px-6 lg:px-8">
+      <div
+        className={`
+    sm:hidden fixed bottom-6 right-6 z-50 transition-all duration-300
+    ${mostrarBotaoFlutuante ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-20 pointer-events-none'}
+  `}
+      >
+        <button
+          onClick={() => {
+            setTransacaoParaEditar(null);
+            setModalAberto(true);
+          }}
+          className="w-14 h-14 rounded-full bg-indigo-600 text-white text-3xl flex items-center justify-center shadow-lg hover:bg-indigo-700 focus:outline-none"
+          aria-label="Adicionar Transação"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Botão tradicional para telas maiores */}
+      <div className="hidden sm:flex justify-end items-center flex-wrap gap-4 mt-4 px-4 sm:px-6 lg:px-8">
         <button
           onClick={abrirModalParaNovaTransacao}
-          className="flex-grow sm:flex-grow-0 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-sm sm:text-base"
+          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-sm sm:text-base"
         >
           Adicionar Transação
         </button>
       </div>
-
       <main className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
         <ResumoFinanceiro transacoes={transacoesFiltradas} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          <div className="lg:col-span-1 md:col-span-2 space-y-6">
+
+          {/* TABS PARA MOBILE */}
+          <div className="md:hidden space-y-4">
+            <div className="flex justify-around border-b border-slate-300 dark:border-slate-700">
+              <button
+                className={`flex-1 py-2 text-sm font-medium ${abaMobile === 'grafico' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+                onClick={() => setAbaMobile('grafico')}
+              >
+                Gráfico
+              </button>
+              <button
+                className={`flex-1 py-2 text-sm font-medium ${abaMobile === 'metas' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+                onClick={() => setAbaMobile('metas')}
+              >
+                Metas
+              </button>
+              <button
+                className={`flex-1 py-2 text-sm font-medium ${abaMobile === 'recorrentes' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+                onClick={() => setAbaMobile('recorrentes')}
+              >
+                Transações Recorrentes
+              </button>
+            </div>
+
+            {abaMobile === 'grafico' && <GraficoCategorias transacoes={transacoesFiltradas} />}
+            {abaMobile === 'metas' && (
+              <PainelMetas
+                onNovaMetaClick={abrirModalNovaMeta}
+                onSelecionarMetaParaEditar={handleSelecionarMetaParaEditar}
+                transacoes={transacoes}
+              />
+            )}
+            {abaMobile === 'recorrentes' && (
+              <PainelRecorrentes
+                onSelecionarParaEditar={handleSelecionarRecorrenciaParaEditar}
+                onNovaRecorrenciaClick={abrirModalNovaRecorrencia}
+              />
+            )}
+          </div>
+
+          {/* LAYOUT PADRÃO PARA TELAS MAIORES */}
+          <div className="hidden md:block lg:col-span-1 md:col-span-2 space-y-6">
             <PainelRecorrentes
               onSelecionarParaEditar={handleSelecionarRecorrenciaParaEditar}
               onNovaRecorrenciaClick={abrirModalNovaRecorrencia}
