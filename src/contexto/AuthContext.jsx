@@ -18,9 +18,22 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUsuario(user);
       setCarregando(false);
+      
+      // ===================================================================
+      // ================ NOVA LÓGICA DE COMUNICAÇÃO =======================
+      // Verifica se está rodando dentro do nosso WebView nativo
+      if (window.ReactNativeWebView) {
+        if (user) {
+          // Se o usuário existe (logou), envia uma mensagem para o app nativo
+          window.ReactNativeWebView.postMessage('USER_LOGGED_IN');
+        } else {
+          // Se o usuário não existe (deslogou), envia outra mensagem
+          window.ReactNativeWebView.postMessage('USER_LOGGED_OUT');
+        }
+      }
+      // ===================================================================
     });
 
-    // --- NOVA LÓGICA PARA O WEBVIEW ---
     // Função para lidar com o token recebido do app nativo
     const handleTokenFromNative = async (event) => {
       console.log("Token recebido do app nativo!");
@@ -33,17 +46,15 @@ export function AuthProvider({ children }) {
           const credential = GoogleAuthProvider.credential(token);
           // Faz o login no Firebase com a credencial
           await signInWithCredential(auth, credential);
-          // O listener onAuthStateChanged cuidará de atualizar o usuário e o estado de carregamento
         } catch (error) {
           console.error("Erro ao autenticar com a credencial nativa:", error);
-          setCarregando(false); // Garante que o carregamento termine em caso de erro
+          setCarregando(false); 
         }
       }
     };
 
     // Adiciona o listener para o evento customizado que o app nativo vai disparar
     window.addEventListener('firebaseAuthTokenReceived', handleTokenFromNative);
-    // --- FIM DA NOVA LÓGICA ---
 
     // Função de limpeza que é executada quando o componente é desmontado
     return () => {
