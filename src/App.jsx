@@ -2,53 +2,42 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, getDocs, where, addDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase/configuracao';
 import Swal from 'sweetalert2';
-
-// ✨ 1. Importar o hook de autenticação e o componente de Login
 import { useAuth } from './contexto/AuthContext.jsx';
 import Login from './componentes/Login.jsx';
-
-// Componentes
 import ListaTransacoes from './componentes/ListaTransacoes';
 import ResumoFinanceiro from './componentes/ResumoFinanceiro';
 import GraficoCategorias from './componentes/GraficoCategorias';
 import Filtros from './componentes/Filtros';
 import ModalTransacao from './componentes/ModalTransacao';
-import { ChartBarIcon } from '@heroicons/react/24/solid';
+import { ChartBarIcon, SunIcon, MoonIcon } from '@heroicons/react/24/solid';
 import PainelMetas from './componentes/PainelMetas';
 import ModalMeta from './componentes/ModalMeta';
 import ModalRecorrente from './componentes/ModalRecorrente';
 import PainelRecorrentes from './componentes/PainelRecorrentes';
+import { useTema } from './contexto/TemaContext';
 
 function App() {
-  // ✨ 2. Usar o contexto para obter o usuário e a função de logout
   const { usuario, logout } = useAuth();
-
   const [transacoes, setTransacoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [transacaoParaEditar, setTransacaoParaEditar] = useState(null);
   const [modalAberto, setModalAberto] = useState(false);
-  
   const [modalMetaAberto, setModalMetaAberto] = useState(false);
   const [metaParaEditar, setMetaParaEditar] = useState(null);
-
   const [modalRecorrenteAberto, setModalRecorrenteAberto] = useState(false);
   const [recorrenciaParaEditar, setRecorrenciaParaEditar] = useState(null);
-
   const [dataInicio, setDataInicio] = useState(null);
   const [dataFim, setDataFim] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
   const [filtroTipo, setFiltroTipo] = useState('todos');
-  
   const recorrenciasProcessadas = useRef(false);
+  const { temaEscuro, setTemaEscuro } = useTema();
 
-  // Motor de Transações Recorrentes
   useEffect(() => {
-    // ✨ 3. Garantir que só rode se houver um usuário logado
     if (!usuario || recorrenciasProcessadas.current) return;
 
     const processarRecorrencias = async () => {
       const hoje = new Date();
-      // ✨ 4. Filtrar as regras pelo ID do usuário logado
       const q = query(collection(db, "transacoesRecorrentes"), where("ativa", "==", true), where("userId", "==", usuario.uid));
       const querySnapshot = await getDocs(q);
       const promessas = [];
@@ -57,7 +46,7 @@ function App() {
         const regra = { id: docRecorrente.id, ...docRecorrente.data() };
         const ultimoRegistro = regra.ultimoRegistro ? regra.ultimoRegistro.toDate() : null;
         let deveCriar = false;
-        
+
         if (!ultimoRegistro) {
           if (hoje.getDate() >= regra.diaDoMes) deveCriar = true;
         } else {
@@ -73,38 +62,35 @@ function App() {
             tipo: regra.tipo,
             categoria: regra.categoria,
             data: dataDaTransacao.toISOString(),
-            userId: usuario.uid, // ✨ 5. Adicionar o ID do usuário na nova transação
+            userId: usuario.uid,
           };
 
           promessas.push(addDoc(collection(db, 'transacoes'), novaTransacao));
           promessas.push(updateDoc(doc(db, 'transacoesRecorrentes', regra.id), { ultimoRegistro: new Date() }));
         }
       });
-      
+
       if (promessas.length > 0) await Promise.all(promessas);
     };
 
     processarRecorrencias();
     recorrenciasProcessadas.current = true;
-  }, [usuario]); // Depende do usuário para rodar
+  }, [usuario]);
 
-  // Listener para transações normais
   useEffect(() => {
-    // ✨ 6. Garantir que só busque transações se houver um usuário
     if (!usuario) {
-      setTransacoes([]); // Limpa as transações se o usuário fizer logout
+      setTransacoes([]);
       setCarregando(false);
       return;
     }
 
-    // ✨ 7. Filtrar as transações pelo ID do usuário logado
     const q = query(collection(db, "transacoes"), where("userId", "==", usuario.uid), orderBy("data", "desc"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       setTransacoes(querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
       setCarregando(false);
     });
     return () => unsubscribe();
-  }, [usuario]); // Depende do usuário para re-executar a busca
+  }, [usuario]);
 
   const transacoesFiltradas = useMemo(() => {
     return transacoes.filter(t => {
@@ -147,7 +133,6 @@ function App() {
   const abrirModalNovaRecorrencia = () => { setRecorrenciaParaEditar(null); setModalRecorrenteAberto(true); };
   const handleCancelarEdicaoRecorrencia = () => { setRecorrenciaParaEditar(null); setModalRecorrenteAberto(false); };
 
-  // ✨ 8. Função para fazer logout
   const handleLogout = async () => {
     try {
       await logout();
@@ -157,33 +142,33 @@ function App() {
     }
   };
 
-  // ✨ 9. Se não houver usuário, renderiza a tela de Login
   if (!usuario) {
     return <Login />;
   }
 
-  // Se houver usuário, renderiza o dashboard completo
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="bg-slate-800 shadow-md">
+    <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+      <header className="bg-slate-800 shadow-md dark:bg-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 flex-wrap gap-2">
           <div className="flex items-center space-x-2">
-            <ChartBarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-400" />
-            <h1 className="text-lg sm:text-xl font-bold text-white">Dashboard Financeiro</h1>
+            <ChartBarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-400 dark:text-indigo-300" />
+            <h1 className="text-lg sm:text-xl font-bold text-white dark:text-slate-100">Dashboard Financeiro</h1>
           </div>
-          {/* ✨ 10. Informações do usuário e botão de logout */}
           <div className="flex items-center space-x-4">
             <img src={usuario.photoURL} alt={usuario.displayName} className="h-8 w-8 rounded-full" />
-            <span className="text-white text-sm font-medium hidden sm:block">{usuario.displayName}</span>
-            <button onClick={handleLogout} className="text-sm text-slate-300 hover:text-white font-semibold">Sair</button>
+            <span className="text-white text-sm font-medium hidden sm:block dark:text-slate-100">{usuario.displayName}</span>
+            <button onClick={() => setTemaEscuro(!temaEscuro)} className="text-slate-300 hover:text-white dark:text-slate-400 dark:hover:text-slate-100">
+              {temaEscuro ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+            </button>
+            <button onClick={handleLogout} className="text-sm text-slate-300 hover:text-white font-semibold dark:text-slate-400 dark:hover:text-slate-100">Sair</button>
           </div>
         </div>
       </header>
 
       <div className="flex justify-end items-center flex-wrap gap-4 mt-4 px-4 sm:px-6 lg:px-8">
-        <button 
+        <button
           onClick={abrirModalParaNovaTransacao}
-          className="flex-grow sm:flex-grow-0 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm sm:text-base"
+          className="flex-grow sm:flex-grow-0 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-sm sm:text-base"
         >
           Adicionar Transação
         </button>
@@ -191,36 +176,39 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
         <ResumoFinanceiro transacoes={transacoesFiltradas} />
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-1 md:col-span-2 space-y-6">
-            <PainelRecorrentes 
+            <PainelRecorrentes
               onSelecionarParaEditar={handleSelecionarRecorrenciaParaEditar}
               onNovaRecorrenciaClick={abrirModalNovaRecorrencia}
             />
-            <PainelMetas 
-              onNovaMetaClick={abrirModalNovaMeta} 
+            <PainelMetas
+              onNovaMetaClick={abrirModalNovaMeta}
               onSelecionarMetaParaEditar={handleSelecionarMetaParaEditar}
               transacoes={transacoes}
             />
             <GraficoCategorias transacoes={transacoesFiltradas} />
           </div>
+
           <div className="lg:col-span-2 md:col-span-2 space-y-6">
-            <Filtros 
+            <Filtros
               transacoes={transacoes}
-              filtros={{dataInicio, dataFim, filtroCategoria, filtroTipo}}
-              setters={{setDataInicio, setDataFim, setFiltroCategoria, setFiltroTipo}}
+              filtros={{ dataInicio, dataFim, filtroCategoria, filtroTipo }}
+              setters={{ setDataInicio, setDataFim, setFiltroCategoria, setFiltroTipo }}
               onLimparFiltros={limparFiltros}
             />
+
             {carregando ? (
-              <div className="bg-white rounded-lg shadow-md p-4 text-center text-slate-500 flex justify-center items-center space-x-2">
-                <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <div className="bg-white rounded-lg shadow-md p-4 text-center text-slate-500 flex justify-center items-center space-x-2 dark:bg-slate-800 dark:text-slate-400">
+                <svg className="animate-spin h-5 w-5 text-indigo-600 dark:text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
                 <span>Carregando...</span>
               </div>
             ) : (
-              <ListaTransacoes 
+              <ListaTransacoes
                 transacoes={transacoesFiltradas}
                 carregando={carregando}
                 onSelecionarParaEditar={handleSelecionarParaEditar}
@@ -231,18 +219,18 @@ function App() {
         </div>
       </main>
 
-      <ModalTransacao 
+      <ModalTransacao
         aberto={modalAberto}
         aoFechar={handleCancelarEdicao}
         transacaoParaEditar={transacaoParaEditar}
         onCancelarEdicao={handleCancelarEdicao}
       />
-      <ModalMeta 
+      <ModalMeta
         aberto={modalMetaAberto}
         aoFechar={handleCancelarEdicaoMeta}
         metaParaEditar={metaParaEditar}
       />
-      <ModalRecorrente 
+      <ModalRecorrente
         aberto={modalRecorrenteAberto}
         aoFechar={handleCancelarEdicaoRecorrencia}
         recorrenciaParaEditar={recorrenciaParaEditar}

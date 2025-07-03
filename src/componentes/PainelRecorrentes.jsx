@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-// ✨ 1. Importar a função 'where' do firestore
 import { collection, query, onSnapshot, doc, deleteDoc, where } from 'firebase/firestore';
 import { db } from '../firebase/configuracao';
 import Swal from 'sweetalert2';
 import { PencilIcon, TrashIcon, ArrowPathIcon, PlusCircleIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '../contexto/AuthContext.jsx'; // ✨ 2. Importar o hook de autenticação
+import { useAuth } from '../contexto/AuthContext.jsx';
 
 const formatadorMoeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -15,12 +14,12 @@ const RecorrenteCard = ({ regra, onEditar, onExcluir }) => {
   return (
     <div className="flex items-center justify-between p-3">
       <div className="flex items-center space-x-3">
-        <div className={`p-2 rounded-full ${regra.tipo === 'receita' ? 'bg-green-100' : 'bg-red-100'}`}>
+        <div className={`p-2 rounded-full ${regra.tipo === 'receita' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
           <ArrowPathIcon className={`h-5 w-5 ${regra.tipo === 'receita' ? 'text-green-600' : 'text-red-600'}`} />
         </div>
         <div>
-          <p className="font-bold text-slate-800">{regra.descricao}</p>
-          <p className="text-sm text-slate-500">{proximoVencimento}</p>
+          <p className="font-bold text-slate-800 dark:text-slate-100">{regra.descricao}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{proximoVencimento}</p>
         </div>
       </div>
       <div className="flex items-center space-x-3">
@@ -38,28 +37,26 @@ const RecorrenteCard = ({ regra, onEditar, onExcluir }) => {
   );
 };
 
-const PainelRecorrentes = ({ onSelecionarParaEditar, onNovaRecorrenciaClick }) => { 
-  const { usuario } = useAuth(); // ✨ 3. Obter o usuário logado
+const PainelRecorrentes = ({ onSelecionarParaEditar, onNovaRecorrenciaClick }) => {
+  const { usuario } = useAuth();
   const [recorrencias, setRecorrencias] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [expandido, setExpandido] = useState(true);
 
   useEffect(() => {
-    // ✨ 4. Não buscar nada se não houver usuário
     if (!usuario) {
-        setRecorrencias([]);
-        setCarregando(false);
-        return;
+      setRecorrencias([]);
+      setCarregando(false);
+      return;
     }
 
-    // ✨ 5. Adicionar o filtro 'where' para buscar apenas as recorrências do usuário
     const q = query(collection(db, "transacoesRecorrentes"), where("userId", "==", usuario.uid));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       setRecorrencias(querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
       setCarregando(false);
     });
     return () => unsubscribe();
-  }, [usuario]); // ✨ 6. Adicionar 'usuario' como dependência
+  }, [usuario]);
 
   const handleExcluir = async (id) => {
     const confirmacao = await Swal.fire({
@@ -83,13 +80,13 @@ const PainelRecorrentes = ({ onSelecionarParaEditar, onNovaRecorrenciaClick }) =
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md">
-      <div className="p-4 border-b border-slate-200 flex justify-between items-center">
+    <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md">
+      <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
         <button onClick={() => setExpandido(!expandido)} className="flex items-center space-x-2 text-left">
-            <h2 className="text-lg font-bold text-slate-700">Transações Recorrentes</h2>
-            {expandido ? <ChevronUpIcon className="h-5 w-5 text-slate-500"/> : <ChevronDownIcon className="h-5 w-5 text-slate-500"/>}
+          <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200">Transações Recorrentes</h2>
+          {expandido ? <ChevronUpIcon className="h-5 w-5 text-slate-500" /> : <ChevronDownIcon className="h-5 w-5 text-slate-500" />}
         </button>
-        <button 
+        <button
           onClick={onNovaRecorrenciaClick}
           className="flex items-center space-x-2 text-sm bg-teal-600 text-white px-3 py-1 rounded-md hover:bg-teal-700"
         >
@@ -99,15 +96,15 @@ const PainelRecorrentes = ({ onSelecionarParaEditar, onNovaRecorrenciaClick }) =
       </div>
 
       <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandido ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-        <div className="divide-y divide-slate-100 p-1">
-          {carregando && <p className="p-4 text-slate-500">Carregando...</p>}
+        <div className="divide-y divide-slate-100 dark:divide-slate-700 p-1">
+          {carregando && <p className="p-4 text-slate-500 dark:text-slate-400">Carregando...</p>}
           {!carregando && recorrencias.length === 0 && (
-            <p className="p-4 text-center text-slate-500">Nenhuma transação recorrente configurada.</p>
+            <p className="p-4 text-center text-slate-500 dark:text-slate-400">Nenhuma transação recorrente configurada.</p>
           )}
           {recorrencias.map(regra => (
-            <RecorrenteCard 
-              key={regra.id} 
-              regra={regra} 
+            <RecorrenteCard
+              key={regra.id}
+              regra={regra}
               onEditar={onSelecionarParaEditar}
               onExcluir={handleExcluir}
             />

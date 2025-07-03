@@ -1,8 +1,6 @@
 import React from 'react';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 
-// ✨ Criamos a instância do formatador fora do componente.
-// Ele é criado apenas uma vez e reutilizado, melhorando a performance.
 const formatadorMoeda = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
@@ -11,24 +9,24 @@ const formatadorMoeda = new Intl.NumberFormat('pt-BR', {
 function ListaTransacoes({ transacoes, carregando, onSelecionarParaEditar, onExcluir }) {
   if (carregando) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-4 text-center text-slate-500">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-4 text-center text-slate-500 dark:text-slate-400">
         Carregando...
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-4 border-b border-slate-200">
-        <h2 className="text-lg font-bold text-slate-700">Histórico de Transações</h2>
+    <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md overflow-hidden">
+      <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+        <h2 className="text-lg font-bold text-slate-700 dark:text-slate-100">Histórico de Transações</h2>
       </div>
       
       {transacoes.length === 0 ? (
-        <p className="text-center text-slate-500 py-8">
+        <p className="text-center text-slate-500 dark:text-slate-400 py-8">
           Nenhum lançamento encontrado para os filtros selecionados.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {transacoes.map((t) => {
             const ehReceita = t.tipo === 'receita';
             const valorFormatado = formatadorMoeda.format(t.valor);
@@ -41,12 +39,12 @@ function ListaTransacoes({ transacoes, carregando, onSelecionarParaEditar, onExc
             });
 
             return (
-              <li key={t.id} className="flex items-center justify-between gap-4 p-4 group hover:bg-slate-50">
+              <li key={t.id} className="flex items-center justify-between gap-4 p-4 group hover:bg-slate-50 dark:hover:bg-slate-800">
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-800 truncate" title={t.descricao}>
+                  <p className="font-semibold text-slate-800 dark:text-slate-100 truncate" title={t.descricao}>
                     {t.descricao}
                   </p>
-                  <div className="flex items-center text-sm text-slate-500 mt-1">
+                  <div className="flex items-center text-sm text-slate-500 dark:text-slate-400 mt-1">
                     <span>{t.categoria}</span>
                     <span className="mx-2">|</span>
                     <span className="text-xs">{dataFormatada}</span>
@@ -61,14 +59,14 @@ function ListaTransacoes({ transacoes, carregando, onSelecionarParaEditar, onExc
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => onSelecionarParaEditar(t)}
-                      className="p-1 text-slate-400 hover:text-indigo-600"
+                      className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
                       aria-label="Editar transação"
                     >
                       <PencilSquareIcon className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => onExcluir(t.id)}
-                      className="p-1 text-slate-400 hover:text-red-600"
+                      className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400"
                       aria-label="Excluir transação"
                     >
                       <TrashIcon className="h-5 w-5" />

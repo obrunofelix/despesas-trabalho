@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ArrowUpCircleIcon, ArrowDownCircleIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+import { ArrowUpCircleIcon, ArrowDownCircleIcon, ScaleIcon } from '@heroicons/react/24/outline';
 
 const formatarMoeda = (valor) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -16,14 +16,14 @@ function ResumoFinanceiro({ transacoes }) {
     return { receitas, despesas, saldo };
   }, [transacoes]);
 
-  const cardStyles = "bg-white p-6 rounded-xl shadow-md flex items-center space-x-4 transition-transform hover:scale-105";
+  const cardStyles = "bg-white dark:bg-slate-900 p-6 rounded-xl shadow-md flex items-center space-x-4 transition-transform hover:scale-105";
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className={cardStyles}>
         <ArrowUpCircleIcon className="h-12 w-12 text-emerald-500" aria-label="Ícone de receitas" />
         <div>
-          <h3 className="text-sm font-medium text-slate-500">Total de Receitas</h3>
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total de Receitas</h3>
           <p className="text-2xl font-bold text-emerald-600">{formatarMoeda(receitas)}</p>
         </div>
       </div>
@@ -31,15 +31,15 @@ function ResumoFinanceiro({ transacoes }) {
       <div className={cardStyles}>
         <ArrowDownCircleIcon className="h-12 w-12 text-rose-500" aria-label="Ícone de despesas" />
         <div>
-          <h3 className="text-sm font-medium text-slate-500">Total de Despesas</h3>
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total de Despesas</h3>
           <p className="text-2xl font-bold text-rose-600">{formatarMoeda(despesas)}</p>
         </div>
       </div>
 
       <div className={cardStyles}>
-        <BanknotesIcon className="h-12 w-12 text-indigo-500" aria-label="Ícone de saldo" />
+        <ScaleIcon className="h-12 w-12 text-indigo-500" aria-label="Ícone de saldo" />
         <div>
-          <h3 className="text-sm font-medium text-slate-500">Saldo Atual</h3>
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Saldo Atual</h3>
           <p className={`text-2xl font-bold ${saldo >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
             {formatarMoeda(saldo)}
           </p>

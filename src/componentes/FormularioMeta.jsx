@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase/configuracao';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
-import { useAuth } from '../contexto/AuthContext.jsx'; // ✨ 1. Importar o hook de autenticação
+import { useAuth } from '../contexto/AuthContext.jsx';
 
 const formatadorMoeda = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -18,7 +18,7 @@ const tiposDeMeta = [
 const categoriasDisponiveis = ['Alimentação', 'Transporte', 'Moradia', 'Lazer', 'Saúde', 'Outro'];
 
 const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
-  const { usuario } = useAuth(); // ✨ 2. Obter o usuário logado
+  const { usuario } = useAuth();
 
   const [tipo, setTipo] = useState(tiposDeMeta[0].valor);
   const [nome, setNome] = useState('');
@@ -83,7 +83,7 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
       nome,
       tipo,
       valorAlvo: valorAlvoNumerico,
-      userId: usuario.uid, // ✨ 3. Adicionar o ID do usuário aos dados da meta
+      userId: usuario.uid,
     };
 
     if (tipo === 'ECONOMIA') {
@@ -102,7 +102,7 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
         Swal.fire({
           toast: true, position: 'top-end', icon: 'success',
           title: 'Sua meta foi atualizada!',
-          showConfirmButton: false, timer: 3000, timerProgressBar: true,
+          showConfirmButton: false, timer: 3000,
         });
       } else {
         dadosMeta.valorAtual = 0;
@@ -111,7 +111,7 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
         Swal.fire({
           toast: true, position: 'top-end', icon: 'success',
           title: 'Sua nova meta foi criada!',
-          showConfirmButton: false, timer: 3000, timerProgressBar: true,
+          showConfirmButton: false, timer: 3000,
         });
       }
       aoFinalizar();
@@ -121,22 +121,25 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
     }
   };
 
-  const inputStyle = 'w-full p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm';
-  const labelStyle = "text-sm font-medium text-slate-600 mb-1 block";
+  const inputStyle = 'w-full p-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm';
+  const labelStyle = "text-sm font-medium text-slate-600 dark:text-slate-200 mb-1 block";
 
   return (
-    <form onSubmit={aoSubmeter} className="space-y-4 p-4 pt-10">
-      <h2 className="text-lg font-bold text-slate-700">{modoEdicao ? 'Editar Meta' : 'Criar Nova Meta'}</h2>
+    <form onSubmit={aoSubmeter} className="space-y-4 p-4 pt-10 bg-slate-50 dark:bg-slate-800 rounded-lg">
+      <h2 className="text-lg font-bold text-slate-700 dark:text-white">{modoEdicao ? 'Editar Meta' : 'Criar Nova Meta'}</h2>
+      
       <div>
         <label className={labelStyle}>Qual o tipo de meta?</label>
         <select value={tipo} onChange={(e) => setTipo(e.target.value)} className={inputStyle} disabled={modoEdicao}>
           {tiposDeMeta.map(t => <option key={t.valor} value={t.valor}>{t.texto}</option>)}
         </select>
       </div>
+
       <div>
         <label className={labelStyle}>Dê um nome para a meta</label>
         <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Férias de Fim de Ano" className={inputStyle} />
       </div>
+
       {tipo === 'GASTO_LIMITE' && (
         <div>
           <label className={labelStyle}>Para qual categoria de gasto?</label>
@@ -145,31 +148,53 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
           </select>
         </div>
       )}
+
       {(tipo === 'GASTO_LIMITE' || tipo === 'SALDO_MES') && (
-         <div>
+        <div>
           <label className={labelStyle}>Para qual mês?</label>
           <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} className={inputStyle} />
         </div>
       )}
+
       <div>
         <label className={labelStyle}>
           {tipo === 'GASTO_LIMITE' ? 'Qual o limite de gasto?' : 'Qual o valor alvo?'}
         </label>
-        <input type="text" value={!valorAlvo ? '' : formatadorMoeda.format(Number(valorAlvo) / 100)} onChange={handleValorChange} placeholder="R$ 0,00" className={inputStyle}/>
+        <input
+          type="text"
+          value={!valorAlvo ? '' : formatadorMoeda.format(Number(valorAlvo) / 100)}
+          onChange={handleValorChange}
+          placeholder="R$ 0,00"
+          className={inputStyle}
+        />
       </div>
+
       {tipo === 'ECONOMIA' && (
         <>
           <div>
             <label className={labelStyle}>Prazo final (opcional)</label>
-            <input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} disabled={semPrazo} className={`${inputStyle} ${semPrazo ? 'bg-slate-200' : ''}`} />
+            <input
+              type="date"
+              value={dataFim}
+              onChange={(e) => setDataFim(e.target.value)}
+              disabled={semPrazo}
+              className={`${inputStyle} ${semPrazo ? 'bg-slate-200 dark:bg-slate-600' : ''}`}
+            />
           </div>
           <div className="flex items-center space-x-2">
-            <input type="checkbox" id="semPrazo" checked={semPrazo} onChange={(e) => setSemPrazo(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"/>
-            <label htmlFor="semPrazo" className="text-sm text-slate-600">Sem prazo definido</label>
+            <input
+              type="checkbox"
+              id="semPrazo"
+              checked={semPrazo}
+              onChange={(e) => setSemPrazo(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="semPrazo" className="text-sm text-slate-600 dark:text-slate-300">Sem prazo definido</label>
           </div>
         </>
       )}
-      <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700">
+
+      <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
         {modoEdicao ? 'Salvar Alterações' : 'Criar Meta'}
       </button>
     </form>

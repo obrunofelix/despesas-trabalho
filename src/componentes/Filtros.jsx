@@ -50,45 +50,43 @@ function Filtros({ transacoes, filtros, setters, onLimparFiltros }) {
     setDataFim(fim.toISOString().slice(0, 10));
     setPresetAtivo(presetId);
   };
-  
+
   const handleDataManualChange = (setter, valor) => {
     setter(valor);
     setPresetAtivo(null);
   };
-  
+
   const handleLimparTudo = () => {
     onLimparFiltros();
     setPresetAtivo(null);
-  }
+  };
 
-  const inputStyle = "w-full p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm";
-  const labelStyle = "text-sm font-medium text-slate-600 mb-1 block";
+  const inputStyle = "w-full p-2 bg-slate-100 text-slate-900 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600";
+  const labelStyle = "text-sm font-medium text-slate-600 dark:text-slate-200 mb-1 block";
   const presetButtonStyle = "px-3 py-1 text-sm rounded-full cursor-pointer transition-colors";
   const presetActiveStyle = "bg-indigo-600 text-white font-semibold";
-  const presetInactiveStyle = "bg-slate-200 text-slate-700 hover:bg-slate-300";
+  const presetInactiveStyle = "bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600";
 
   return (
-    <div className="bg-slate-50 rounded-lg shadow-inner p-4 border border-slate-200 space-y-4">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 border border-slate-200 dark:border-slate-700 space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <FunnelIcon className="h-5 w-5 text-slate-500"/>
-          <h2 className="text-lg font-bold text-slate-700">Filtros</h2>
+          <FunnelIcon className="h-5 w-5 text-slate-500 dark:text-slate-300" />
+          <h2 className="text-lg font-bold text-slate-700 dark:text-slate-100">Filtros</h2>
         </div>
-        <button 
+        <button
           onClick={handleLimparTudo}
-          className="flex items-center space-x-2 text-sm text-slate-500 hover:text-red-600 font-semibold"
+          className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 font-semibold"
         >
-          <XCircleIcon className="h-5 w-5"/>
+          <XCircleIcon className="h-5 w-5" />
           <span>Limpar Filtros</span>
         </button>
       </div>
-      
+
       <div className="flex flex-wrap items-center gap-2">
-        {/* ✨ LINHA CORRIGIDA ABAIXO ✨ */}
-        <p className="text-sm font-medium text-slate-600">Períodos Rápidos:</p>
-        
+        <p className="text-sm font-medium text-slate-600 dark:text-slate-200">Períodos Rápidos:</p>
         {presetsDeData.map(preset => (
-          <button 
+          <button
             key={preset.id}
             onClick={() => handlePresetClick(preset.id)}
             className={`${presetButtonStyle} ${presetAtivo === preset.id ? presetActiveStyle : presetInactiveStyle}`}
@@ -98,21 +96,21 @@ function Filtros({ transacoes, filtros, setters, onLimparFiltros }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4 border-t border-slate-200 pt-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4 border-t border-slate-200 dark:border-slate-700 pt-4">
         <div>
           <label htmlFor="data-inicio" className={labelStyle}>De:</label>
-          <input 
+          <input
             type="date"
             id="data-inicio"
             value={dataInicio || ''}
             onChange={(e) => handleDataManualChange(setDataInicio, e.target.value)}
-            className={inputStyle} 
+            className={inputStyle}
           />
         </div>
 
         <div>
           <label htmlFor="data-fim" className={labelStyle}>Até:</label>
-          <input 
+          <input
             type="date"
             id="data-fim"
             value={dataFim || ''}
@@ -120,7 +118,7 @@ function Filtros({ transacoes, filtros, setters, onLimparFiltros }) {
             className={inputStyle}
           />
         </div>
-        
+
         <div>
           <label htmlFor="categoria" className={labelStyle}>Categoria</label>
           <select id="categoria" value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={inputStyle}>

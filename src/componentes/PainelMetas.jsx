@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-// ✨ 1. Importar a função 'where' do firestore
 import { collection, query, onSnapshot, doc, deleteDoc, updateDoc, increment, where } from 'firebase/firestore';
 import { db } from '../firebase/configuracao';
 import Swal from 'sweetalert2';
 import { PlusCircleIcon, PencilIcon, TrashIcon, ChevronDownIcon, ChevronUpIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 import confetti from 'canvas-confetti';
-import { useAuth } from '../contexto/AuthContext.jsx'; // ✨ 2. Importar o hook de autenticação
+import { useAuth } from '../contexto/AuthContext.jsx';
 
 const formatadorMoeda = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -15,13 +14,13 @@ const formatadorMoeda = new Intl.NumberFormat('pt-BR', {
 const MetaCard = ({ meta, onEditar, onExcluir, onAdicionarProgresso }) => {
   const isConcluida = meta.status === 'concluida';
   const isExpirada = meta.status === 'expirada';
-  
+
   let progresso = meta.progresso || 0;
   let valorAtualFormatado = formatadorMoeda.format(meta.valorAtualCalculado || 0);
   let valorAlvoFormatado = formatadorMoeda.format(meta.valorAlvo || 0);
   let textoProgresso;
   let corBarra;
-  
+
   const containerClasses = isExpirada ? 'opacity-60 grayscale' : '';
 
   switch (meta.tipo) {
@@ -42,65 +41,65 @@ const MetaCard = ({ meta, onEditar, onExcluir, onAdicionarProgresso }) => {
       corBarra = isConcluida ? 'bg-green-500' : 'bg-indigo-500';
       break;
   }
-  
+
   if (isConcluida && meta.tipo !== 'GASTO_LIMITE') textoProgresso = `Meta Concluída!`;
   if (isExpirada) textoProgresso = `Prazo encerrado.`;
-
 
   return (
     <div className={`space-y-2 ${containerClasses}`}>
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2">
-            {isConcluida && <CheckBadgeIcon className="h-6 w-6 text-green-500" />}
-            <h3 className="font-bold text-slate-700">{meta.nome}</h3>
+          {isConcluida && <CheckBadgeIcon className="h-6 w-6 text-green-500" />}
+          <h3 className="font-bold text-slate-700 dark:text-slate-200">{meta.nome}</h3>
         </div>
         <div className="flex space-x-2 items-center">
-           {meta.tipo === 'ECONOMIA' && (
-             <button onClick={() => onAdicionarProgresso(meta)} disabled={isConcluida || isExpirada} className="text-slate-400 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed" title="Adicionar Progresso">
-               <PlusCircleIcon className="h-6 w-6"/>
-             </button>
-           )}
-           <button onClick={() => onEditar(meta)} disabled={isConcluida || isExpirada} className="text-slate-400 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"><PencilIcon className="h-5 w-5"/></button>
-           <button onClick={() => onExcluir(meta.id)} className="text-slate-400 hover:text-red-600"><TrashIcon className="h-5 w-5"/></button>
+          {meta.tipo === 'ECONOMIA' && (
+            <button onClick={() => onAdicionarProgresso(meta)} disabled={isConcluida || isExpirada} className="text-slate-400 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed" title="Adicionar Progresso">
+              <PlusCircleIcon className="h-6 w-6" />
+            </button>
+          )}
+          <button onClick={() => onEditar(meta)} disabled={isConcluida || isExpirada} className="text-slate-400 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed">
+            <PencilIcon className="h-5 w-5" />
+          </button>
+          <button onClick={() => onExcluir(meta.id)} className="text-slate-400 hover:text-red-600">
+            <TrashIcon className="h-5 w-5" />
+          </button>
         </div>
       </div>
-      
-      <div className="w-full bg-slate-200 rounded-full h-2.5">
-        <div 
+
+      <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
+        <div
           className={`${corBarra} h-2.5 rounded-full transition-all duration-500`}
           style={{ width: `${progresso > 100 ? 100 : progresso}%` }}
         ></div>
       </div>
 
-      <p className="text-sm text-slate-600 text-right">{textoProgresso}</p>
+      <p className="text-sm text-slate-600 dark:text-slate-400 text-right">{textoProgresso}</p>
     </div>
   );
 };
 
-
 const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }) => {
-  const { usuario } = useAuth(); // ✨ 3. Obter o usuário logado
+  const { usuario } = useAuth();
   const [metas, setMetas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [expandido, setExpandido] = useState(true);
 
   useEffect(() => {
-    // ✨ 4. Não fazer a busca se não houver usuário
     if (!usuario) {
-        setMetas([]);
-        setCarregando(false);
-        return;
-    };
+      setMetas([]);
+      setCarregando(false);
+      return;
+    }
 
-    // ✨ 5. Adicionar o filtro 'where' para buscar apenas as metas do usuário
     const q = query(collection(db, "metas"), where("userId", "==", usuario.uid));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       setMetas(querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
       setCarregando(false);
     });
     return () => unsubscribe();
-  }, [usuario]); // ✨ 6. Adicionar 'usuario' como dependência
-  
+  }, [usuario]);
+
   const metasComProgresso = useMemo(() => {
     if (!transacoes || !usuario) return [];
 
@@ -115,15 +114,15 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
             .reduce((acc, t) => acc + t.valor, 0);
           break;
         case 'SALDO_MES':
-          const receitasDoMes = transacoes.filter(t => t.tipo === 'receita' && t.data.startsWith(meta.mes)).reduce((acc, t) => acc + t.valor, 0);
-          const despesasDoMes = transacoes.filter(t => t.tipo === 'despesa' && t.data.startsWith(meta.mes)).reduce((acc, t) => acc + t.valor, 0);
-          valorAtualCalculado = receitasDoMes - despesasDoMes;
+          const receitas = transacoes.filter(t => t.tipo === 'receita' && t.data.startsWith(meta.mes)).reduce((acc, t) => acc + t.valor, 0);
+          const despesas = transacoes.filter(t => t.tipo === 'despesa' && t.data.startsWith(meta.mes)).reduce((acc, t) => acc + t.valor, 0);
+          valorAtualCalculado = receitas - despesas;
           break;
         default:
           valorAtualCalculado = meta.valorAtual || 0;
           break;
       }
-      
+
       if (meta.valorAlvo > 0 && valorAtualCalculado >= meta.valorAlvo) {
         status = 'concluida';
       } else if (meta.dataFim && meta.dataFim.toDate() < new Date()) {
@@ -134,7 +133,7 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
       return { ...meta, valorAtualCalculado, progresso, status };
     });
   }, [metas, transacoes, usuario]);
-  
+
   const handleAdicionarProgresso = async (meta) => {
     const { value: valorFinal } = await Swal.fire({
       title: `Adicionar à meta "${meta.nome}"`,
@@ -162,32 +161,32 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
     });
 
     if (valorFinal) {
-        const metaDocRef = doc(db, 'metas', meta.id);
-        const novoValorAtual = (meta.valorAtualCalculado || 0) + valorFinal;
+      const metaDocRef = doc(db, 'metas', meta.id);
+      const novoValorAtual = (meta.valorAtualCalculado || 0) + valorFinal;
 
-        try {
-            await updateDoc(metaDocRef, { valorAtual: increment(valorFinal) });
+      try {
+        await updateDoc(metaDocRef, { valorAtual: increment(valorFinal) });
 
-            if (novoValorAtual >= meta.valorAlvo) {
-                Swal.fire({
-                    title: 'Parabéns!',
-                    text: `Você alcançou sua meta "${meta.nome}"!`,
-                    icon: 'success',
-                    didOpen: () => {
-                      confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
-                    }
-                });
-            } else {
-                Swal.fire({
-                    toast: true, position: 'top-end', icon: 'success',
-                    title: 'Progresso adicionado!',
-                    showConfirmButton: false, timer: 3000, timerProgressBar: true,
-                });
+        if (novoValorAtual >= meta.valorAlvo) {
+          Swal.fire({
+            title: 'Parabéns!',
+            text: `Você alcançou sua meta "${meta.nome}"!`,
+            icon: 'success',
+            didOpen: () => {
+              confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
             }
-        } catch (error) {
-            console.error("Erro ao adicionar progresso:", error);
-            Swal.fire('Erro', 'Não foi possível atualizar a meta.', 'error');
+          });
+        } else {
+          Swal.fire({
+            toast: true, position: 'top-end', icon: 'success',
+            title: 'Progresso adicionado!',
+            showConfirmButton: false, timer: 3000, timerProgressBar: true,
+          });
         }
+      } catch (error) {
+        console.error("Erro ao adicionar progresso:", error);
+        Swal.fire('Erro', 'Não foi possível atualizar a meta.', 'error');
+      }
     }
   };
 
@@ -216,14 +215,14 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4">
+    <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-4">
       <div className="flex justify-between items-center">
         <button onClick={() => setExpandido(!expandido)} className="flex items-center space-x-2 text-left">
-          <h2 className="text-lg font-bold text-slate-700">Minhas Metas</h2>
-          {expandido ? <ChevronUpIcon className="h-5 w-5 text-slate-500"/> : <ChevronDownIcon className="h-5 w-5 text-slate-500"/>}
+          <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200">Minhas Metas</h2>
+          {expandido ? <ChevronUpIcon className="h-5 w-5 text-slate-500" /> : <ChevronDownIcon className="h-5 w-5 text-slate-500" />}
         </button>
-        
-        <button 
+
+        <button
           onClick={onNovaMetaClick}
           className="flex items-center space-x-2 text-sm bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700"
         >
@@ -231,25 +230,25 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
           <span className="hidden sm:inline">Nova Meta</span>
         </button>
       </div>
-      
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandido ? 'max-h-screen mt-4' : 'max-h-0'}`}>
-        <div className="space-y-3 divide-y divide-slate-100">
-            {carregando && <p className="text-slate-500 text-center py-4">Carregando metas...</p>}
-            
-            {!carregando && metasComProgresso.length === 0 && (
-                <p className="text-slate-500 text-center py-4">Você ainda não tem nenhuma meta. Que tal criar uma?</p>
-            )}
 
-            {metasComProgresso.map(meta => (
-              <div key={meta.id} className="pt-3 first:pt-0">
-                <MetaCard 
-                  meta={meta} 
-                  onEditar={onSelecionarMetaParaEditar} 
-                  onExcluir={handleExcluirMeta}
-                  onAdicionarProgresso={handleAdicionarProgresso}
-                />
-              </div>
-            ))}
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandido ? 'max-h-screen mt-4' : 'max-h-0'}`}>
+        <div className="space-y-3 divide-y divide-slate-100 dark:divide-slate-700">
+          {carregando && <p className="text-slate-500 dark:text-slate-400 text-center py-4">Carregando metas...</p>}
+
+          {!carregando && metasComProgresso.length === 0 && (
+            <p className="text-slate-500 dark:text-slate-400 text-center py-4">Você ainda não tem nenhuma meta. Que tal criar uma?</p>
+          )}
+
+          {metasComProgresso.map(meta => (
+            <div key={meta.id} className="pt-3 first:pt-0">
+              <MetaCard
+                meta={meta}
+                onEditar={onSelecionarMetaParaEditar}
+                onExcluir={handleExcluirMeta}
+                onAdicionarProgresso={handleAdicionarProgresso}
+              />
+            </div>
+          ))}
         </div>
       </div>
     </div>
