@@ -5,6 +5,13 @@ import { FcGoogle } from 'react-icons/fc';
 const Login = () => {
   const { loginComGoogle } = useAuth();
 
+  // ===================================================================
+  // ================ NOVA LÓGICA DE DETECÇÃO ==========================
+  // Verifica se a variável 'isNativeApp' foi injetada pelo WebView.
+  // Se sim, 'isWebView' será true; caso contrário (no navegador), será false.
+  const isWebView = !!window.isNativeApp;
+  // ===================================================================
+
   const handleLogin = async () => {
     try {
       await loginComGoogle();
@@ -21,18 +28,29 @@ const Login = () => {
             Bem-vindo!
           </h1>
           <p className="text-slate-600 dark:text-slate-300 text-sm">
-            Acesse sua conta para controlar suas finanças com praticidade.
+            {/* Mensagem de instrução que muda dependendo do contexto */}
+            {isWebView 
+              ? "Use o botão de login do aplicativo para entrar." 
+              : "Acesse sua conta para controlar suas finanças com praticidade."
+            }
           </p>
         </header>
 
-        <button
-          onClick={handleLogin}
-          aria-label="Entrar com conta do Google"
-          className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-4 font-medium text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition-all shadow-sm"
-        >
-          <FcGoogle size={20} />
-          Entrar com Google
-        </button>
+        {/* ===================================================================
+            =============== RENDERIZAÇÃO CONDICIONAL DO BOTÃO ===============
+            Este botão só será renderizado se 'isWebView' for falso, 
+            ou seja, quando o site for acessado por um navegador comum.
+        =================================================================== */}
+        {!isWebView && (
+          <button
+            onClick={handleLogin}
+            aria-label="Entrar com conta do Google"
+            className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-4 font-medium text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition-all shadow-sm"
+          >
+            <FcGoogle size={20} />
+            Entrar com Google
+          </button>
+        )}
       </section>
     </main>
   );
