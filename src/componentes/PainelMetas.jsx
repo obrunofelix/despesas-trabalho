@@ -226,8 +226,8 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
           onClick={onNovaMetaClick}
           className="flex items-center space-x-2 text-sm bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700"
         >
-          <PlusCircleIcon className="h-5 w-5" />
-          <span className="hidden sm:inline">Nova Meta</span>
+          <PlusCircleIcon className="h-5 w-5 mx-auto" />
+          <span className="hidden sm:inline">Nova</span>
         </button>
       </div>
 
