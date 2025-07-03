@@ -9,14 +9,14 @@ const formatadorMoeda = new Intl.NumberFormat('pt-BR', {
 function ListaTransacoes({ transacoes, carregando, onSelecionarParaEditar, onExcluir }) {
   if (carregando) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-4 text-center text-slate-500 dark:text-slate-400">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 border border-slate-200 dark:border-slate-700 text-center text-slate-500 dark:text-slate-400">
         Carregando...
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden">
       <div className="p-4 border-b border-slate-200 dark:border-slate-700">
         <h2 className="text-lg font-bold text-slate-700 dark:text-slate-100">Histórico de Transações</h2>
       </div>
@@ -41,7 +41,7 @@ function ListaTransacoes({ transacoes, carregando, onSelecionarParaEditar, onExc
             return (
               <li
                 key={t.id}
-                className="flex items-start justify-between gap-4 p-4 group hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="flex items-start justify-between gap-4 p-4 group hover:bg-slate-50 dark:hover:bg-slate-700"
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800 dark:text-slate-100 truncate" title={t.descricao}>
@@ -59,7 +59,6 @@ function ListaTransacoes({ transacoes, carregando, onSelecionarParaEditar, onExc
                     {valorFormatado}
                   </span>
 
-                  {/* Ações: sempre visíveis no mobile, no hover no desktop */}
                   <div className="flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => onSelecionarParaEditar(t)}

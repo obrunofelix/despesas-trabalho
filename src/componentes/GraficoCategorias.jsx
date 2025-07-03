@@ -1,13 +1,13 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from 'chart.js';
+import PainelBase from './PainelBase';
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 function GraficoCategorias({ transacoes }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Detecta o tema lendo a classe do <html>
   useEffect(() => {
     const checkTema = () => {
       const htmlClass = document.documentElement.classList;
@@ -59,20 +59,11 @@ function GraficoCategorias({ transacoes }) {
         position: 'top',
         labels: {
           padding: 10,
-          color: isDarkMode ? '#E2E8F0' : '#334155' // slate-200 vs slate-700
-        }
+          color: isDarkMode ? '#E2E8F0' : '#334155',
+        },
       },
       title: {
-        display: true,
-        text: 'Distribuição de Despesas',
-        font: {
-          size: 18,
-        },
-        padding: {
-          top: 10,
-          bottom: 20,
-        },
-        color: isDarkMode ? '#E2E8F0' : '#334155',
+        display: false, // já usamos título no PainelBase
       },
     },
   }), [isDarkMode]);
@@ -80,7 +71,7 @@ function GraficoCategorias({ transacoes }) {
   const temDespesas = transacoes.some(t => t.tipo === 'despesa');
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-4">
+    <PainelBase titulo="Distribuição de Despesas">
       {temDespesas ? (
         <div className="relative h-[300px] sm:h-[400px]">
           <Pie data={dadosDoGrafico} options={opcoesDoGrafico} />
@@ -92,7 +83,7 @@ function GraficoCategorias({ transacoes }) {
           </p>
         </div>
       )}
-    </div>
+    </PainelBase>
   );
 }
 

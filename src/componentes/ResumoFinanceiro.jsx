@@ -1,22 +1,18 @@
 import React, { useMemo } from 'react';
 import { ArrowUpCircleIcon, ArrowDownCircleIcon, ScaleIcon } from '@heroicons/react/24/outline';
 
-const formatarMoeda = (valor) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(valor);
-};
+const formatarMoeda = (valor) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
 
 function ResumoFinanceiro({ transacoes }) {
   const { receitas, despesas, saldo } = useMemo(() => {
     const receitas = transacoes.filter((t) => t.tipo === 'receita').reduce((acc, t) => acc + t.valor, 0);
     const despesas = transacoes.filter((t) => t.tipo === 'despesa').reduce((acc, t) => acc + t.valor, 0);
-    const saldo = receitas - despesas;
-    return { receitas, despesas, saldo };
+    return { receitas, despesas, saldo: receitas - despesas };
   }, [transacoes]);
 
-  const cardStyles = "bg-white dark:bg-slate-900 p-6 rounded-xl shadow-md flex items-center space-x-4 transition-transform hover:scale-105";
+  const cardStyles =
+    "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-lg shadow-sm flex items-center space-x-4";
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
