@@ -204,7 +204,7 @@ function App() {
       <div className="hidden sm:flex justify-end items-center flex-wrap gap-4 mt-4 px-4 sm:px-6 lg:px-8">
         <button
           onClick={abrirModalParaNovaTransacao}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-sm sm:text-base"
+          className="cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-sm sm:text-base"
         >
           Adicionar Transação
         </button>
