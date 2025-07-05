@@ -194,7 +194,7 @@ const FormularioMeta = ({ aoFinalizar, metaParaEditar }) => {
         </>
       )}
 
-      <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+      <button type="submit" className=" cursor-pointer w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
         {modoEdicao ? 'Salvar Alterações' : 'Criar Meta'}
       </button>
     </form>

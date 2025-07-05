@@ -45,7 +45,7 @@ const Login = () => {
           <button
             onClick={handleLogin}
             aria-label="Entrar com conta do Google"
-            className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-4 font-medium text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition-all shadow-sm"
+            className="cursor-pointer w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-4 font-medium text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600 transition-all shadow-sm"
           >
             <FcGoogle size={20} />
             Entrar com Google

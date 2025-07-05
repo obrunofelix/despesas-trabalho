@@ -40,7 +40,7 @@ const ModalBase = ({ aberto, aoFechar, children, larguraMaxima = 'max-w-md' }) =
         {/* Botão de fechar */}
         <button
           onClick={aoFechar}
-          className="absolute top-3 right-3 text-slate-400 hover:text-red-500 z-10"
+          className="cursor-pointer absolute top-3 right-3 text-slate-400 hover:text-red-500 z-10"
           aria-label="Fechar modal"
         >
           <XMarkIcon className="h-6 w-6" />

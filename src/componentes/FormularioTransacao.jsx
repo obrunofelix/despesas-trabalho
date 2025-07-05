@@ -132,7 +132,7 @@ const FormularioTransacao = ({ transacaoParaEditar, onCancelarEdicao }) => {
       </div>
 
       <div className="pt-2 space-y-2">
-        <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors">
+        <button type="submit" className="cursor-pointer w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors">
           {modoEdicao ? 'Salvar Alterações' : 'Adicionar'}
         </button>
         {modoEdicao && (
