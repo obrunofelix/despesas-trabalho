@@ -93,7 +93,7 @@ const PainelRecorrentes = ({ onSelecionarParaEditar, onNovaRecorrenciaClick }) =
       botaoAcao={
         <button
           onClick={onNovaRecorrenciaClick}
-          className="flex items-center space-x-2 text-sm bg-teal-600 text-white px-3 py-1 rounded-md hover:bg-teal-700"
+          className="cursor-pointer flex items-center space-x-2 text-sm bg-teal-600 text-white px-3 py-1 rounded-md hover:bg-teal-700"
         >
           <PlusCircleIcon className="h-5 w-5 mx-auto" />
           <span className="cursor-pointer hidden sm:inline">Nova</span>
