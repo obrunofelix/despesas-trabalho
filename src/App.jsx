@@ -193,7 +193,7 @@ function App() {
             setTransacaoParaEditar(null);
             setModalAberto(true);
           }}
-          className="w-14 h-14 rounded-full bg-indigo-600 text-white text-3xl flex items-center justify-center shadow-lg hover:bg-indigo-700 focus:outline-none"
+          className="cursor-pointer w-14 h-14 rounded-full bg-indigo-600 text-white text-3xl flex items-center justify-center shadow-lg hover:bg-indigo-700 focus:outline-none"
           aria-label="Adicionar Transação"
         >
           +
