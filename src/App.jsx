@@ -42,6 +42,8 @@ function App() {
   const [dataFim, setDataFim] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
   const [filtroTipo, setFiltroTipo] = useState('todos');
+  // NOVO ESTADO: Adicionado para controlar o valor do campo de busca por descrição.
+  const [filtroDescricao, setFiltroDescricao] = useState('');
 
   // Estados para controle da UI.
   const [mostrarBotaoFlutuante, setMostrarBotaoFlutuante] = useState(true);
@@ -154,10 +156,14 @@ function App() {
       const passaFiltroData = (!dataInicio || dataTransacao >= new Date(dataInicio)) && (!dataFimAjustada || dataTransacao <= dataFimAjustada);
       const passaFiltroCategoria = filtroCategoria === 'todas' || t.categoria === filtroCategoria;
       const passaFiltroTipo = filtroTipo === 'todos' || t.tipo === filtroTipo;
+      // NOVA LÓGICA: Verifica se a descrição da transação (em minúsculas) inclui o texto do filtro (em minúsculas).
+      const passaFiltroDescricao = filtroDescricao === '' || t.descricao.toLowerCase().includes(filtroDescricao.toLowerCase());
 
-      return passaFiltroData && passaFiltroCategoria && passaFiltroTipo;
+
+      return passaFiltroData && passaFiltroCategoria && passaFiltroTipo && passaFiltroDescricao;
     });
-  }, [transacoes, dataInicio, dataFim, filtroCategoria, filtroTipo]);
+    // NOVA DEPENDÊNCIA: Adicionado `filtroDescricao` ao array de dependências do useMemo.
+  }, [transacoes, dataInicio, dataFim, filtroCategoria, filtroTipo, filtroDescricao]);
 
   // === FUNÇÕES DE MANIPULAÇÃO (Handlers) ===
 
@@ -183,7 +189,14 @@ function App() {
   // Funções para abrir e fechar modais e limpar estados.
   const handleSelecionarParaEditar = (transacao) => { setTransacaoParaEditar(transacao); setModalAberto(true); };
   const handleCancelarEdicao = () => { setTransacaoParaEditar(null); setModalAberto(false); };
-  const limparFiltros = () => { setDataInicio(null); setDataFim(null); setFiltroCategoria('todas'); setFiltroTipo('todos'); };
+  // ATUALIZAÇÃO: A função agora também limpa o estado do filtro de descrição.
+  const limparFiltros = () => {
+    setDataInicio(null);
+    setDataFim(null);
+    setFiltroCategoria('todas');
+    setFiltroTipo('todos');
+    setFiltroDescricao('');
+  };
   const abrirModalParaNovaTransacao = () => { setTransacaoParaEditar(null); limparFiltros(); setModalAberto(true); };
   const abrirModalNovaMeta = () => { setMetaParaEditar(null); setModalMetaAberto(true); };
   const handleSelecionarMetaParaEditar = (meta) => { setMetaParaEditar(meta); setModalMetaAberto(true); };
@@ -258,7 +271,7 @@ function App() {
           Adicionar Transação
         </button>
       </div>
-      
+
       {/* Conteúdo principal do dashboard. */}
       <main className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
         <ResumoFinanceiro transacoes={transacoesFiltradas} />
@@ -274,7 +287,7 @@ function App() {
               >
                 Gráfico
               </button>
-               <button
+              <button
                 className={`flex-1 py-2 text-sm font-medium ${abaMobile === 'metas' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
                 onClick={() => setAbaMobile('metas')}
               >
@@ -323,8 +336,9 @@ function App() {
           <div className="lg:col-span-2 md:col-span-2 space-y-6">
             <Filtros
               transacoes={transacoes}
-              filtros={{ dataInicio, dataFim, filtroCategoria, filtroTipo }}
-              setters={{ setDataInicio, setDataFim, setFiltroCategoria, setFiltroTipo }}
+              // ATUALIZAÇÃO: Passando o novo estado e setter para o componente Filtros.
+              filtros={{ dataInicio, dataFim, filtroCategoria, filtroTipo, filtroDescricao }}
+              setters={{ setDataInicio, setDataFim, setFiltroCategoria, setFiltroTipo, setFiltroDescricao }}
               onLimparFiltros={limparFiltros}
             />
 
