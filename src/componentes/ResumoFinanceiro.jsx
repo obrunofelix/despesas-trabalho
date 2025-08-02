@@ -1,6 +1,7 @@
 // Importa as dependências necessárias do React e da biblioteca de ícones Heroicons.
-import React, { useMemo } from 'react';
-import { ArrowUpCircleIcon, ArrowDownCircleIcon, ScaleIcon } from '@heroicons/react/24/outline';
+import React, { useMemo, useState } from 'react';
+import { ArrowUpCircleIcon, ArrowDownCircleIcon, ScaleIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import PainelBase from './PainelBase'; // Importa o componente base do painel.
 
 // Função auxiliar para formatar um número para o padrão de moeda brasileiro (BRL).
 const formatarMoeda = (valor) =>
@@ -8,6 +9,9 @@ const formatarMoeda = (valor) =>
 
 // Declaração do componente funcional ResumoFinanceiro, que recebe a lista de transações como prop.
 function ResumoFinanceiro({ transacoes }) {
+  // Estado para controlar se o painel está expandido ou recolhido.
+  const [expandido, setExpandido] = useState(true);
+
   // O hook useMemo é usado para otimizar o desempenho.
   // O cálculo de receitas, despesas e saldo só será refeito se a prop `transacoes` mudar.
   const { receitas, despesas, saldo } = useMemo(() => {
@@ -25,37 +29,51 @@ function ResumoFinanceiro({ transacoes }) {
 
   // Renderização do JSX do componente.
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Card para exibir o total de receitas. */}
-      <div className={cardStyles}>
-        <ArrowUpCircleIcon className="h-12 w-12 text-emerald-500" aria-label="Ícone de receitas" />
-        <div>
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total de Receitas</h3>
-          <p className="text-2xl font-bold text-emerald-600">{formatarMoeda(receitas)}</p>
-        </div>
-      </div>
+    <PainelBase
+      titulo={
+        // O título agora é um botão que alterna o estado 'expandido'.
+        <button onClick={() => setExpandido(!expandido)} className="flex items-center justify-between w-full text-left">
+          <span>Resumo Financeiro</span>
+          {/* Exibe o ícone de chevron para cima ou para baixo dependendo do estado. */}
+          {expandido ? <ChevronUpIcon className="h-5 w-5 text-slate-500" /> : <ChevronDownIcon className="h-5 w-5 text-slate-500" />}
+        </button>
+      }
+    >
+      {/* Contêiner do conteúdo que será expandido/recolhido com animação. */}
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandido ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4">
+          {/* Card para exibir o total de receitas. */}
+          <div className={cardStyles}>
+            <ArrowUpCircleIcon className="h-12 w-12 text-emerald-500" aria-label="Ícone de receitas" />
+            <div>
+              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total de Receitas</h3>
+              <p className="text-2xl font-bold text-emerald-600">{formatarMoeda(receitas)}</p>
+            </div>
+          </div>
 
-      {/* Card para exibir o total de despesas. */}
-      <div className={cardStyles}>
-        <ArrowDownCircleIcon className="h-12 w-12 text-rose-500" aria-label="Ícone de despesas" />
-        <div>
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total de Despesas</h3>
-          <p className="text-2xl font-bold text-rose-600">{formatarMoeda(despesas)}</p>
-        </div>
-      </div>
+          {/* Card para exibir o total de despesas. */}
+          <div className={cardStyles}>
+            <ArrowDownCircleIcon className="h-12 w-12 text-rose-500" aria-label="Ícone de despesas" />
+            <div>
+              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total de Despesas</h3>
+              <p className="text-2xl font-bold text-rose-600">{formatarMoeda(despesas)}</p>
+            </div>
+          </div>
 
-      {/* Card para exibir o saldo atual. */}
-      <div className={cardStyles}>
-        <ScaleIcon className="h-12 w-12 text-indigo-500" aria-label="Ícone de saldo" />
-        <div>
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Saldo Atual</h3>
-          {/* A cor do texto do saldo muda condicionalmente: azul para positivo/zero, vermelho para negativo. */}
-          <p className={`text-2xl font-bold ${saldo >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
-            {formatarMoeda(saldo)}
-          </p>
+          {/* Card para exibir o saldo atual. */}
+          <div className={cardStyles}>
+            <ScaleIcon className="h-12 w-12 text-indigo-500" aria-label="Ícone de saldo" />
+            <div>
+              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Saldo Atual</h3>
+              {/* A cor do texto do saldo muda condicionalmente: azul para positivo/zero, vermelho para negativo. */}
+              <p className={`text-2xl font-bold ${saldo >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
+                {formatarMoeda(saldo)}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </PainelBase>
   );
 }
 
