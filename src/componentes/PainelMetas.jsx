@@ -1,28 +1,34 @@
+// Importa as dependências necessárias do React, Firebase e outras bibliotecas.
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, onSnapshot, doc, deleteDoc, updateDoc, increment, where } from 'firebase/firestore';
-import { db } from '../firebase/configuracao';
-import Swal from 'sweetalert2';
-import { PlusCircleIcon, PencilIcon, TrashIcon, ChevronDownIcon, ChevronUpIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
-import confetti from 'canvas-confetti';
-import { useAuth } from '../contexto/AuthContext.jsx';
-import PainelBase from './PainelBase';
+import { db } from '../firebase/configuracao'; // Instância do Firestore.
+import Swal from 'sweetalert2'; // Para alertas e modais.
+import { PlusCircleIcon, PencilIcon, TrashIcon, ChevronDownIcon, ChevronUpIcon, CheckBadgeIcon } from '@heroicons/react/24/outline'; // Ícones.
+import confetti from 'canvas-confetti'; // Para o efeito de confete ao concluir uma meta.
+import { useAuth } from '../contexto/AuthContext.jsx'; // Hook para autenticação.
+import PainelBase from './PainelBase'; // Componente base para painéis.
 
+// Cria um formatador de moeda para exibir valores no formato de Real (BRL).
 const formatadorMoeda = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
 });
 
+// Componente para renderizar um único card de meta.
 const MetaCard = ({ meta, onEditar, onExcluir, onAdicionarProgresso }) => {
+  // Verifica o status da meta para aplicar estilos e lógicas diferentes.
   const isConcluida = meta.status === 'concluida';
   const isExpirada = meta.status === 'expirada';
 
+  // Define as variáveis para a barra de progresso e textos.
   let progresso = meta.progresso || 0;
   let valorAtualFormatado = formatadorMoeda.format(meta.valorAtualCalculado || 0);
   let valorAlvoFormatado = formatadorMoeda.format(meta.valorAlvo || 0);
   let textoProgresso;
   let corBarra;
-  const containerClasses = isExpirada ? 'opacity-60 grayscale' : '';
+  const containerClasses = isExpirada ? 'opacity-60 grayscale' : ''; // Aplica estilo se a meta estiver expirada.
 
+  // Define o texto e a cor da barra de progresso com base no tipo da meta.
   switch (meta.tipo) {
     case 'GASTO_LIMITE':
       textoProgresso = `${valorAtualFormatado} gastos de ${valorAlvoFormatado}`;
@@ -30,15 +36,16 @@ const MetaCard = ({ meta, onEditar, onExcluir, onAdicionarProgresso }) => {
       break;
     case 'SALDO_MES':
       textoProgresso = `Saldo de ${valorAtualFormatado} de ${valorAlvoFormatado}`;
-      progresso = meta.valorAtualCalculado < 0 ? 0 : progresso;
+      progresso = meta.valorAtualCalculado < 0 ? 0 : progresso; // Garante que o progresso não seja negativo.
       corBarra = isConcluida ? 'bg-green-500' : 'bg-sky-500';
       break;
-    default:
+    default: // Caso 'ECONOMIA'
       textoProgresso = `${valorAtualFormatado} de ${valorAlvoFormatado}`;
       corBarra = isConcluida ? 'bg-green-500' : 'bg-indigo-500';
       break;
   }
 
+  // Sobrescreve o texto de progresso se a meta estiver concluída ou expirada.
   if (isConcluida && meta.tipo !== 'GASTO_LIMITE') textoProgresso = `Meta Concluída!`;
   if (isExpirada) textoProgresso = `Prazo encerrado.`;
 
@@ -50,6 +57,7 @@ const MetaCard = ({ meta, onEditar, onExcluir, onAdicionarProgresso }) => {
           <h3 className="font-bold text-slate-800 dark:text-slate-100">{meta.nome}</h3>
         </div>
         <div className="flex space-x-2 items-center">
+          {/* Botão para adicionar progresso, visível apenas para metas de 'ECONOMIA'. */}
           {meta.tipo === 'ECONOMIA' && (
             <button
               onClick={() => onAdicionarProgresso(meta)}
@@ -76,10 +84,11 @@ const MetaCard = ({ meta, onEditar, onExcluir, onAdicionarProgresso }) => {
         </div>
       </div>
 
+      {/* Barra de progresso visual. */}
       <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
         <div
           className={`${corBarra} h-2.5 rounded-full transition-all duration-500`}
-          style={{ width: `${progresso > 100 ? 100 : progresso}%` }}
+          style={{ width: `${progresso > 100 ? 100 : progresso}%` }} // Garante que a barra não passe de 100%.
         />
       </div>
 
@@ -88,55 +97,73 @@ const MetaCard = ({ meta, onEditar, onExcluir, onAdicionarProgresso }) => {
   );
 };
 
+// Componente principal do painel de metas.
 const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }) => {
+  // Obtém o usuário logado do contexto.
   const { usuario } = useAuth();
+  // Estado para armazenar a lista de metas vinda do Firestore.
   const [metas, setMetas] = useState([]);
+  // Estado para controlar o indicador de carregamento.
   const [carregando, setCarregando] = useState(true);
+  // Estado para controlar se o painel está expandido ou recolhido.
   const [expandido, setExpandido] = useState(false);
 
+  // useEffect para buscar as metas do usuário em tempo real.
   useEffect(() => {
-    if (!usuario) return;
+    if (!usuario) return; // Não faz nada se não houver usuário.
 
+    // Cria uma query para buscar as metas do usuário logado.
     const q = query(collection(db, "metas"), where("userId", "==", usuario.uid));
+    // onSnapshot "escuta" as mudanças na coleção em tempo real.
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const lista = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
       setMetas(lista);
       setCarregando(false);
     });
 
+    // Função de limpeza: cancela a "escuta" quando o componente é desmontado.
     return () => unsubscribe();
   }, [usuario]);
 
+  // useMemo para calcular o progresso das metas.
+  // O cálculo só é refeito se `metas`, `transacoes` ou `usuario` mudarem.
   const metasComProgresso = useMemo(() => {
     if (!usuario || !transacoes) return [];
 
     return metas.map(meta => {
-      let valorAtualCalculado = meta.valorAtual || 0;
+      let valorAtualCalculado = meta.valorAtual || 0; // Valor inicial é o que está salvo (para metas de economia).
       let status = 'ativa';
 
+      // Calcula o progresso com base no tipo da meta.
       switch (meta.tipo) {
         case 'GASTO_LIMITE':
+          // Soma todas as despesas da categoria e mês especificados na meta.
           valorAtualCalculado = transacoes
             .filter(t => t.tipo === 'despesa' && t.categoria === meta.categoria && t.data.startsWith(meta.mes))
             .reduce((acc, t) => acc + t.valor, 0);
           break;
         case 'SALDO_MES':
+          // Calcula o saldo (receitas - despesas) do mês especificado.
           const receitas = transacoes.filter(t => t.tipo === 'receita' && t.data.startsWith(meta.mes)).reduce((acc, t) => acc + t.valor, 0);
           const despesas = transacoes.filter(t => t.tipo === 'despesa' && t.data.startsWith(meta.mes)).reduce((acc, t) => acc + t.valor, 0);
           valorAtualCalculado = receitas - despesas;
           break;
         default:
+          // Para metas de 'ECONOMIA', o valor já é o `meta.valorAtual`.
           break;
       }
 
+      // Define o status da meta (concluída ou expirada).
       if (meta.valorAlvo > 0 && valorAtualCalculado >= meta.valorAlvo) status = 'concluida';
       else if (meta.dataFim && meta.dataFim.toDate() < new Date()) status = 'expirada';
 
+      // Calcula a porcentagem do progresso.
       const progresso = meta.valorAlvo > 0 ? (valorAtualCalculado / meta.valorAlvo) * 100 : 0;
       return { ...meta, valorAtualCalculado, progresso, status };
     });
   }, [metas, transacoes, usuario]);
 
+  // Função para adicionar progresso manualmente a uma meta de 'ECONOMIA'.
   const handleAdicionarProgresso = async (meta) => {
     const { value: valorFinal } = await Swal.fire({
       title: `Adicionar à meta "${meta.nome}"`,
@@ -145,6 +172,7 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
       cancelButtonText: 'Cancelar',
       showCancelButton: true,
       didOpen: () => {
+        // Formata o input do Swal para moeda enquanto o usuário digita.
         const input = document.getElementById('swal-input-valor');
         input.focus();
         input.addEventListener('input', (e) => {
@@ -153,6 +181,7 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
         });
       },
       preConfirm: () => {
+        // Valida e converte o valor antes de confirmar.
         const valorLimpo = document.getElementById('swal-input-valor').value.replace(/\D/g, '');
         const valorNumerico = Number(valorLimpo) / 100;
         if (!valorNumerico || valorNumerico <= 0) {
@@ -165,7 +194,9 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
 
     if (valorFinal) {
       try {
+        // Atualiza o valor no Firestore usando `increment` para uma operação atômica.
         await updateDoc(doc(db, 'metas', meta.id), { valorAtual: increment(valorFinal) });
+        // Se a meta foi concluída, exibe confete.
         if (meta.valorAtualCalculado + valorFinal >= meta.valorAlvo) {
           Swal.fire({
             title: 'Parabéns!',
@@ -183,6 +214,7 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
     }
   };
 
+  // Função para excluir uma meta.
   const handleExcluirMeta = async (id) => {
     const confirmacao = await Swal.fire({
       title: 'Deseja excluir esta meta?',
@@ -204,6 +236,7 @@ const PainelMetas = ({ onNovaMetaClick, onSelecionarMetaParaEditar, transacoes }
     }
   };
 
+  // Renderização do JSX do componente.
   return (
     <PainelBase
       titulo={
