@@ -1,3 +1,5 @@
+// src/App.jsx
+
 // Importa as dependências necessárias do React, Firebase, bibliotecas de UI e componentes locais.
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, getDocs, where, addDoc, updateDoc } from 'firebase/firestore';
@@ -22,7 +24,7 @@ function App() {
   // === ESTADOS E CONTEXTOS ===
   const { usuario, logout } = useAuth(); // Obtém o usuário logado e a função de logout do contexto.
   const { temaEscuro, setTemaEscuro } = useTema(); // Obtém o estado do tema.
-  
+
   // Estados para dados da aplicação.
   const [transacoes, setTransacoes] = useState([]); // Armazena a lista de todas as transações do usuário.
   const [carregando, setCarregando] = useState(true); // Indica se os dados iniciais estão sendo carregados.
@@ -148,11 +150,11 @@ function App() {
       const dataTransacao = new Date(t.data);
       const dataFimAjustada = dataFim ? new Date(dataFim) : null;
       if (dataFimAjustada) dataFimAjustada.setHours(23, 59, 59, 999); // Garante que o dia final seja incluído.
-      
+
       const passaFiltroData = (!dataInicio || dataTransacao >= new Date(dataInicio)) && (!dataFimAjustada || dataTransacao <= dataFimAjustada);
       const passaFiltroCategoria = filtroCategoria === 'todas' || t.categoria === filtroCategoria;
       const passaFiltroTipo = filtroTipo === 'todos' || t.tipo === filtroTipo;
-      
+
       return passaFiltroData && passaFiltroCategoria && passaFiltroTipo;
     });
   }, [transacoes, dataInicio, dataFim, filtroCategoria, filtroTipo]);
@@ -272,7 +274,18 @@ function App() {
               >
                 Gráfico
               </button>
-              {/* ... outros botões de aba ... */}
+               <button
+                className={`flex-1 py-2 text-sm font-medium ${abaMobile === 'metas' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+                onClick={() => setAbaMobile('metas')}
+              >
+                Metas
+              </button>
+              <button
+                className={`flex-1 py-2 text-sm font-medium ${abaMobile === 'recorrentes' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+                onClick={() => setAbaMobile('recorrentes')}
+              >
+                Recorrentes
+              </button>
             </div>
 
             {/* Renderização condicional do conteúdo da aba ativa. */}
@@ -284,7 +297,12 @@ function App() {
                 transacoes={transacoes}
               />
             )}
-            {/* ... outros painéis de aba ... */}
+            {abaMobile === 'recorrentes' && (
+              <PainelRecorrentes
+                onSelecionarParaEditar={handleSelecionarRecorrenciaParaEditar}
+                onNovaRecorrenciaClick={abrirModalNovaRecorrencia}
+              />
+            )}
           </div>
 
           {/* Layout de colunas para telas maiores (desktop). */}

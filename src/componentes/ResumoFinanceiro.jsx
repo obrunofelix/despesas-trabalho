@@ -1,79 +1,83 @@
 // Importa as dependências necessárias do React e da biblioteca de ícones Heroicons.
 import React, { useMemo, useState } from 'react';
-import { ArrowUpCircleIcon, ArrowDownCircleIcon, ScaleIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
-import PainelBase from './PainelBase'; // Importa o componente base do painel.
+import { ArrowUpCircleIcon, ArrowDownCircleIcon, ScaleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 // Função auxiliar para formatar um número para o padrão de moeda brasileiro (BRL).
 const formatarMoeda = (valor) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
 
+// Componente para renderizar o valor ou um placeholder, mantendo a cor.
+const ValorVisivel = ({ valor, cor, visivel }) => {
+  if (visivel) {
+    return <p className={`text-2xl font-bold ${cor}`}>{formatarMoeda(valor)}</p>;
+  }
+  // Quando não está visível, exibe o placeholder com a mesma cor que o valor teria.
+  return <p className={`text-2xl font-bold ${cor}`}>R$ ●●●●●</p>;
+};
+
+
 // Declaração do componente funcional ResumoFinanceiro, que recebe a lista de transações como prop.
 function ResumoFinanceiro({ transacoes }) {
-  // Estado para controlar se o painel está expandido ou recolhido.
-  const [expandido, setExpandido] = useState(true);
+  // Estado para controlar a visibilidade dos saldos.
+  const [saldoVisivel, setSaldoVisivel] = useState(true);
 
   // O hook useMemo é usado para otimizar o desempenho.
   // O cálculo de receitas, despesas e saldo só será refeito se a prop `transacoes` mudar.
   const { receitas, despesas, saldo } = useMemo(() => {
-    // Calcula o total de receitas filtrando as transações do tipo 'receita' e somando seus valores.
     const receitas = transacoes.filter((t) => t.tipo === 'receita').reduce((acc, t) => acc + t.valor, 0);
-    // Calcula o total de despesas filtrando as transações do tipo 'despesa' e somando seus valores.
     const despesas = transacoes.filter((t) => t.tipo === 'despesa').reduce((acc, t) => acc + t.valor, 0);
-    // Retorna um objeto com os totais calculados e o saldo (receitas - despesas).
     return { receitas, despesas, saldo: receitas - despesas };
-  }, [transacoes]); // O array de dependências que dispara o recálculo.
+  }, [transacoes]);
 
-  // Constante para armazenar as classes do Tailwind CSS, evitando repetição e facilitando a manutenção.
+  // Constante para armazenar as classes do Tailwind CSS para os cards.
   const cardStyles =
     "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-lg shadow-sm flex items-center space-x-4";
 
   // Renderização do JSX do componente.
   return (
-    <PainelBase
-      titulo={
-        // O título agora é um botão que alterna o estado 'expandido'.
-        <button onClick={() => setExpandido(!expandido)} className="flex items-center justify-between w-full text-left">
-          <span>Resumo Financeiro</span>
-          {/* Exibe o ícone de chevron para cima ou para baixo dependendo do estado. */}
-          {expandido ? <ChevronUpIcon className="h-5 w-5 text-slate-500" /> : <ChevronDownIcon className="h-5 w-5 text-slate-500" />}
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+      {/* Cabeçalho com o título e o botão para alternar a visibilidade */}
+      <div className="flex justify-between items-center px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+        <h2 className="text-lg font-bold text-slate-700 dark:text-slate-100">Resumo Financeiro</h2>
+        <button
+          onClick={() => setSaldoVisivel(!saldoVisivel)}
+          className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+          aria-label={saldoVisivel ? "Ocultar saldos" : "Mostrar saldos"}
+        >
+          {saldoVisivel ? <EyeSlashIcon className="h-6 w-6" /> : <EyeIcon className="h-6 w-6" />}
         </button>
-      }
-    >
-      {/* Contêiner do conteúdo que será expandido/recolhido com animação. */}
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expandido ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4">
-          {/* Card para exibir o total de receitas. */}
-          <div className={cardStyles}>
-            <ArrowUpCircleIcon className="h-12 w-12 text-emerald-500" aria-label="Ícone de receitas" />
-            <div>
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total de Receitas</h3>
-              <p className="text-2xl font-bold text-emerald-600">{formatarMoeda(receitas)}</p>
-            </div>
-          </div>
+      </div>
 
-          {/* Card para exibir o total de despesas. */}
-          <div className={cardStyles}>
-            <ArrowDownCircleIcon className="h-12 w-12 text-rose-500" aria-label="Ícone de despesas" />
-            <div>
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total de Despesas</h3>
-              <p className="text-2xl font-bold text-rose-600">{formatarMoeda(despesas)}</p>
-            </div>
+      {/* Grid com os cards de resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4">
+        {/* Card para exibir o total de receitas. */}
+        <div className={cardStyles}>
+          <ArrowUpCircleIcon className="h-12 w-12 text-emerald-500 flex-shrink-0" aria-label="Ícone de receitas" />
+          <div>
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total de Receitas</h3>
+            <ValorVisivel valor={receitas} cor="text-emerald-600" visivel={saldoVisivel} />
           </div>
+        </div>
 
-          {/* Card para exibir o saldo atual. */}
-          <div className={cardStyles}>
-            <ScaleIcon className="h-12 w-12 text-indigo-500" aria-label="Ícone de saldo" />
-            <div>
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Saldo Atual</h3>
-              {/* A cor do texto do saldo muda condicionalmente: azul para positivo/zero, vermelho para negativo. */}
-              <p className={`text-2xl font-bold ${saldo >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
-                {formatarMoeda(saldo)}
-              </p>
-            </div>
+        {/* Card para exibir o total de despesas. */}
+        <div className={cardStyles}>
+          <ArrowDownCircleIcon className="h-12 w-12 text-rose-500 flex-shrink-0" aria-label="Ícone de despesas" />
+          <div>
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total de Despesas</h3>
+            <ValorVisivel valor={despesas} cor="text-rose-600" visivel={saldoVisivel} />
+          </div>
+        </div>
+
+        {/* Card para exibir o saldo atual. */}
+        <div className={cardStyles}>
+          <ScaleIcon className="h-12 w-12 text-indigo-500 flex-shrink-0" aria-label="Ícone de saldo" />
+          <div>
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Saldo Atual</h3>
+            <ValorVisivel valor={saldo} cor={saldo >= 0 ? 'text-indigo-600' : 'text-rose-600'} visivel={saldoVisivel} />
           </div>
         </div>
       </div>
-    </PainelBase>
+    </div>
   );
 }
 
