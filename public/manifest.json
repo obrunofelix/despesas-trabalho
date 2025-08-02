@@ -23,14 +23,14 @@
   "screenshots": [
     {
       "src": "/exemplo.png",
-      "sizes": "1280x720",
+      "sizes": "1862x924",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Visão Geral do Dashboard"
     },
     {
       "src": "/exemplo.png",
-      "sizes": "1280x720",
+      "sizes": "1862x924",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Visão Geral do Dashboard"
